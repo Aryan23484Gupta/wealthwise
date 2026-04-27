@@ -1,2 +1,13 @@
+# Node modules
 node_modules/
+
+# Build folders
 dist/
+build/
+
+# Environment files
+.env
+.env.local
+
+# Optional (only if you REALLY want to ignore them)
+# package-lock.json

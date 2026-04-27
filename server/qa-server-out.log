@@ -1,0 +1,5 @@
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+MongoDB connected
+[2026-04-27T12:57:36.831Z] [INFO] MongoDB connected
+[2026-04-27T12:57:36.855Z] [INFO] Server running on port 5000
+[2026-04-27T12:57:36.856Z] [INFO] Chat endpoint available at http://localhost:5000/chat
