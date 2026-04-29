@@ -243,7 +243,9 @@ a {
 .notification-pill,
 .logout-button,
 .primary-button,
+.danger-button,
 .ghost-button,
+.link-button,
 .prompt-list button,
 .mode-toggle button {
   border: 0;
@@ -359,8 +361,20 @@ a {
   color: white;
 }
 
+.danger-button {
+  background: linear-gradient(135deg, var(--danger), color-mix(in srgb, var(--danger) 62%, black 38%));
+  color: white;
+}
+
 .ghost-button {
   background: var(--primary-soft);
+}
+
+.link-button {
+  justify-self: flex-start;
+  padding: 0;
+  background: transparent;
+  color: var(--primary);
 }
 
 .page-grid {
@@ -625,6 +639,13 @@ input[type="number"] {
 
 .notice-card.info {
   background: rgba(29, 78, 216, 0.12);
+}
+
+.danger-zone {
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--line));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
 }
 
 .auth-shell {

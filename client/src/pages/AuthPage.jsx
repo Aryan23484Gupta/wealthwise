@@ -5,15 +5,25 @@ import { useFinance } from "../context/FinanceContext";
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { login, requestSignupOtp, verifySignupOtp, resendSignupOtp, user } = useFinance();
+  const {
+    login,
+    requestPasswordReset,
+    requestSignupOtp,
+    resetPassword,
+    verifySignupOtp,
+    resendSignupOtp,
+    user
+  } = useFinance();
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
+    newPassword: "",
     otp: ""
   });
   const [otpSession, setOtpSession] = useState(null);
+  const [resetSession, setResetSession] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -36,9 +46,34 @@ export default function AuthPage() {
           name: "",
           email: "",
           password: "",
+          newPassword: "",
           otp: ""
         });
         navigate("/");
+      } else if (mode === "forgot" && resetSession) {
+        const result = await resetPassword({
+          email: resetSession.email,
+          otp: form.otp,
+          password: form.newPassword
+        });
+        setForm({
+          name: "",
+          email: "",
+          password: "",
+          newPassword: "",
+          otp: ""
+        });
+        setResetSession(null);
+        setMode("login");
+        setMessage(result.message);
+      } else if (mode === "forgot") {
+        const result = await requestPasswordReset(form.email);
+        setResetSession({
+          email: result.email || form.email,
+          otpExpiresAt: result.otpExpiresAt,
+          developmentOtp: result.developmentOtp
+        });
+        setMessage(result.message);
       } else if (otpSession) {
         await verifySignupOtp({
           email: otpSession.email,
@@ -48,6 +83,7 @@ export default function AuthPage() {
           name: "",
           email: "",
           password: "",
+          newPassword: "",
           otp: ""
         });
         setOtpSession(null);
@@ -107,7 +143,7 @@ export default function AuthPage() {
       >
         <div className="auth-copy">
           <span className="auth-badge">AI-powered finance manager</span>
-          <h1>Plan, track, and optimize every dollar.</h1>
+          <h1>Plan, track, and optimize every rupee.</h1>
           <p>
             PulseIQ blends personal finance controls with AI insights, budget alerts, and clean
             analytics in one responsive workspace.
@@ -124,6 +160,7 @@ export default function AuthPage() {
                 setError("");
                 setMessage("");
                 setOtpSession(null);
+                setResetSession(null);
               }}
             >
               Login
@@ -135,13 +172,41 @@ export default function AuthPage() {
                 setMode("signup");
                 setError("");
                 setMessage("");
+                setResetSession(null);
               }}
             >
               Sign Up
             </button>
           </div>
 
-          {mode === "signup" && otpSession ? (
+          {mode === "forgot" && resetSession ? (
+            <>
+              <label>
+                OTP code
+                <input
+                  name="otp"
+                  value={form.otp}
+                  onChange={handleChange}
+                  inputMode="numeric"
+                  minLength={6}
+                  maxLength={6}
+                  placeholder="123456"
+                  required
+                />
+              </label>
+              <label>
+                New password
+                <input
+                  name="newPassword"
+                  type="password"
+                  value={form.newPassword}
+                  onChange={handleChange}
+                  minLength={6}
+                  required
+                />
+              </label>
+            </>
+          ) : mode === "signup" && otpSession ? (
             <>
 
               <label>
@@ -158,6 +223,11 @@ export default function AuthPage() {
                 />
               </label>
             </>
+          ) : mode === "forgot" ? (
+            <label>
+              Email
+              <input name="email" type="email" value={form.email} onChange={handleChange} required />
+            </label>
           ) : (
             <>
               {mode === "signup" && (
@@ -177,13 +247,32 @@ export default function AuthPage() {
             </>
           )}
 
+          {mode === "login" ? (
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => {
+                setMode("forgot");
+                setError("");
+                setMessage("");
+                setOtpSession(null);
+              }}
+            >
+              Forgot password?
+            </button>
+          ) : null}
+
           {error ? <p className="auth-error">{error}</p> : null}
           {message ? <p className="auth-message">{message}</p> : null}
 
           <button type="submit" className="primary-button full-width" disabled={isSubmitting}>
             {isSubmitting
               ? "Please wait..."
-              : mode === "login"
+              : mode === "forgot"
+                ? resetSession
+                  ? "Reset password"
+                  : "Send reset OTP"
+                : mode === "login"
                 ? "Access dashboard"
                 : otpSession
                   ? "Verify OTP"
@@ -207,6 +296,24 @@ export default function AuthPage() {
                 disabled={isSubmitting}
               >
                 Edit details
+              </button>
+            </div>
+          ) : null}
+
+          {mode === "forgot" ? (
+            <div className="auth-inline-actions">
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => {
+                  setMode("login");
+                  setResetSession(null);
+                  setError("");
+                  setMessage("");
+                }}
+                disabled={isSubmitting}
+              >
+                Back to login
               </button>
             </div>
           ) : null}

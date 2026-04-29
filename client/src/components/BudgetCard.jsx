@@ -4,7 +4,11 @@ export default function BudgetCard({ usage, monthlyBudget, onSave }) {
   function handleSubmit(event) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    onSave(formData.get("budget"));
+    const nextBudget = Number(formData.get("budget"));
+    if (!Number.isFinite(nextBudget) || nextBudget < 0) {
+      return;
+    }
+    onSave(nextBudget);
   }
 
   return (

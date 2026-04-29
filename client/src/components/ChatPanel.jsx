@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function ChatPanel({ messages, onSend, isSending = false }) {
   const [question, setQuestion] = useState("");
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, isSending]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -23,6 +28,13 @@ export default function ChatPanel({ messages, onSend, isSending = false }) {
             <p>{message.text}</p>
           </div>
         ))}
+        {isSending ? (
+          <div className="chat-bubble assistant">
+            <span>AI</span>
+            <p>Thinking...</p>
+          </div>
+        ) : null}
+        <div ref={messagesEndRef} />
       </div>
 
       <form className="chat-form" onSubmit={handleSubmit}>

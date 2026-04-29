@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { buildInsights, createSeedData } from "../data/mockData";
+import { buildAssistantReply, buildInsights, createSeedData } from "../data/mockData";
 import {
   computeCategoryBreakdown,
   computeMonthlyTrend,
@@ -55,7 +55,11 @@ function buildAuthHeaders(token, extraHeaders = {}) {
 function mergeSessionState(sessionState, currentState) {
   return {
     ...createGuestState(currentState.preferences.theme),
+    ...currentState,
     ...sessionState,
+    transactions: sessionState.transactions ?? currentState.transactions,
+    goals: sessionState.goals ?? currentState.goals,
+    notifications: sessionState.notifications ?? currentState.notifications,
     assistantMessages: currentState.assistantMessages
   };
 }
@@ -259,6 +263,38 @@ export function FinanceProvider({ children }) {
 
         return data;
       },
+      requestPasswordReset: async (email) => {
+        const response = await fetch(`${API_BASE_URL}/api/auth/password/forgot`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ email })
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Unable to request password reset.");
+        }
+
+        return data;
+      },
+      resetPassword: async (payload) => {
+        const response = await fetch(`${API_BASE_URL}/api/auth/password/reset`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Unable to reset password.");
+        }
+
+        return data;
+      },
       logout: async () => {
         const theme = state.preferences.theme;
 
@@ -435,6 +471,20 @@ export function FinanceProvider({ children }) {
         });
         applyState(data.state);
       },
+      changePassword: async (payload) => {
+        await request("/api/users/password", {
+          method: "PUT",
+          body: JSON.stringify(payload)
+        });
+      },
+      deleteAccount: async (password) => {
+        await request("/api/users/account", {
+          method: "DELETE",
+          body: JSON.stringify({ password })
+        });
+        setAuthToken("");
+        setState(createGuestState(state.preferences.theme));
+      },
       addGoal: async (goal) => {
         if (!authToken) {
           const fallbackGoal = { ...goal, id: generateId("goal") };
@@ -473,28 +523,32 @@ export function FinanceProvider({ children }) {
         return data.goal;
       },
       askAssistant: async (question) => {
-        const response = await fetch(`${API_BASE_URL}/chat`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            message: question,
-            context: {
-              user: state.user,
-              budget: state.budget,
-              goals: state.goals,
-              transactions: state.transactions
-            }
-          })
-        });
-        const data = await response.json();
+        try {
+          const response = await fetch(`${API_BASE_URL}/chat`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              message: question,
+              context: {
+                user: state.user,
+                budget: state.budget,
+                goals: state.goals,
+                transactions: state.transactions
+              }
+            })
+          });
+          const data = await response.json();
 
-        if (!response.ok) {
-          throw new Error(data.message || "Assistant request failed.");
+          if (!response.ok) {
+            throw new Error(data.message || "Assistant request failed.");
+          }
+
+          return data.message;
+        } catch {
+          return buildAssistantReply(question, state);
         }
-
-        return data.message;
       }
     };
   }, [authToken, isBootstrapping, notificationsError, notificationsLoading, state]);

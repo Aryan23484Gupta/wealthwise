@@ -51,7 +51,7 @@ function buildStatePayload(user) {
       theme: user.preferences?.theme || "dark"
     },
     budget: {
-      monthlyBudget: user.budget?.monthlyBudget ?? 3500
+      monthlyBudget: user.budget?.monthlyBudget ?? 0
     },
     goals: Array.isArray(user.goals) ? user.goals.map(mapGoal) : [],
     notifications: Array.isArray(user.notifications) ? user.notifications.map(mapNotification) : []
@@ -64,26 +64,11 @@ function ensureUserDefaults(user) {
   }
 
   if (!user.budget) {
-    user.budget = { monthlyBudget: 3500 };
+    user.budget = { monthlyBudget: 0 };
   }
 
-  if (!Array.isArray(user.goals) || user.goals.length === 0) {
-    user.goals = [
-      {
-        id: "goal-1",
-        title: "Buy Laptop",
-        target: 2200,
-        saved: 1180,
-        deadline: "2026-08-15"
-      },
-      {
-        id: "goal-2",
-        title: "Summer Trip",
-        target: 1800,
-        saved: 760,
-        deadline: "2026-09-10"
-      }
-    ];
+  if (!Array.isArray(user.goals)) {
+    user.goals = [];
   }
 
   if (!Array.isArray(user.notifications) || user.notifications.length === 0) {

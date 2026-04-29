@@ -14,7 +14,8 @@ export default function AssistantPage() {
     () => [
       "How much did I spend this month?",
       "Where can I save money?",
-      "Am I close to my budget limit?"
+      "Am I close to my budget limit?",
+      "Where should I invest my extra money?"
     ],
     []
   );

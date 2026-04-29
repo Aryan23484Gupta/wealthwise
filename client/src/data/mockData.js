@@ -23,22 +23,21 @@ function previousMonthDate(day) {
 export function createSeedData() {
   return {
     user: {
-      name: "Sonam Kumari",
-      email: "sonamkumariq2345@gmail.com",
+      name: "Demo User",
+      email: "demo@wealthwise.in",
       role: "Premium Member",
-      avatar:
-        "https://cdn-icons-png.flaticon.com/512/3607/3607444.png",
+      avatar: "https://cdn-icons-png.flaticon.com/512/3607/3607444.png",
       isAuthenticated: false
     },
     preferences: {
       theme: "dark"
     },
     budget: {
-      monthlyBudget: 3500
+      monthlyBudget: 50000
     },
     goals: [
-      { id: "goal-1", title: "Buy Laptop", target: 2200, saved: 1180, deadline: "2026-08-15" },
-      { id: "goal-2", title: "Summer Trip", target: 1800, saved: 760, deadline: "2026-09-10" }
+      { id: "goal-1", title: "Buy Laptop", target: 80000, saved: 25000, deadline: "2026-08-15" },
+      { id: "goal-2", title: "Summer Trip", target: 60000, saved: 18000, deadline: "2026-09-10" }
     ],
     notifications: [
       {
@@ -58,28 +57,28 @@ export function createSeedData() {
       {
         id: "msg-1",
         role: "assistant",
-        text: "Hi, I’m your finance copilot. Ask me about spending, savings, or where your budget is getting stretched."
+        text: "Hi, I'm your finance copilot. Ask me about spending, savings, investment ideas, or where your budget is getting stretched."
       }
     ],
     transactions: [
-      { id: "txn-1", title: "Monthly Salary", amount: 5200, type: "income", category: "Salary", date: `${currentMonth}-01`, note: "Primary paycheck" },
-      { id: "txn-2", title: "Freelance UI Audit", amount: 860, type: "income", category: "Freelance", date: `${currentMonth}-04`, note: "Side project" },
-      { id: "txn-3", title: "Groceries", amount: 186, type: "expense", category: "Food", date: `${currentMonth}-03`, note: "Weekly groceries" },
-      { id: "txn-4", title: "Airport Taxi", amount: 62, type: "expense", category: "Travel", date: `${currentMonth}-06`, note: "Client visit" },
-      { id: "txn-5", title: "Internet Bill", amount: 78, type: "expense", category: "Bills", date: `${currentMonth}-05`, note: "Fiber connection" },
-      { id: "txn-6", title: "Coffee Meetings", amount: 54, type: "expense", category: "Food", date: `${currentMonth}-08`, note: "Team sync" },
-      { id: "txn-7", title: "Shopping Mall", amount: 140, type: "expense", category: "Shopping", date: `${currentMonth}-10`, note: "Clothes and basics" },
-      { id: "txn-8", title: "Movie Night", amount: 48, type: "expense", category: "Entertainment", date: `${currentMonth}-12`, note: "Weekend outing" },
-      { id: "txn-9", title: "Health Checkup", amount: 110, type: "expense", category: "Health", date: `${currentMonth}-14`, note: "Routine visit" },
-      { id: "txn-10", title: "Emergency Fund", amount: 300, type: "expense", category: "Savings", date: `${currentMonth}-15`, note: "Monthly transfer" },
-      { id: "txn-11", title: "Restaurant Dinner", amount: 95, type: "expense", category: "Food", date: `${currentMonth}-18`, note: "Family dinner" },
-      { id: "txn-12", title: "Utility Bill", amount: 120, type: "expense", category: "Bills", date: `${currentMonth}-20`, note: "Electricity and water" },
-      { id: "txn-13", title: "Taxi Reimbursement", amount: 90, type: "income", category: "Freelance", date: `${currentMonth}-21`, note: "Client reimbursement" },
-      { id: "txn-14", title: "Weekend Train", amount: 40, type: "expense", category: "Travel", date: `${currentMonth}-22`, note: "City trip" },
-      { id: "txn-15", title: "Previous Month Rent", amount: 950, type: "expense", category: "Bills", date: previousMonthDate(3), note: "Apartment rent" },
-      { id: "txn-16", title: "Previous Month Groceries", amount: 152, type: "expense", category: "Food", date: previousMonthDate(9), note: "Stock-up" },
-      { id: "txn-17", title: "Previous Month Salary", amount: 5200, type: "income", category: "Salary", date: previousMonthDate(1), note: "Primary paycheck" },
-      { id: "txn-18", title: "Previous Month Shopping", amount: 90, type: "expense", category: "Shopping", date: previousMonthDate(15), note: "Home supplies" }
+      { id: "txn-1", title: "Monthly Salary", amount: 85000, type: "income", category: "Salary", date: `${currentMonth}-01`, note: "Primary paycheck" },
+      { id: "txn-2", title: "Freelance UI Audit", amount: 18000, type: "income", category: "Freelance", date: `${currentMonth}-04`, note: "Side project" },
+      { id: "txn-3", title: "Groceries", amount: 4200, type: "expense", category: "Food", date: `${currentMonth}-03`, note: "Weekly groceries" },
+      { id: "txn-4", title: "Airport Taxi", amount: 1450, type: "expense", category: "Travel", date: `${currentMonth}-06`, note: "Client visit" },
+      { id: "txn-5", title: "Internet Bill", amount: 999, type: "expense", category: "Bills", date: `${currentMonth}-05`, note: "Fiber connection" },
+      { id: "txn-6", title: "Coffee Meetings", amount: 850, type: "expense", category: "Food", date: `${currentMonth}-08`, note: "Team sync" },
+      { id: "txn-7", title: "Shopping Mall", amount: 5200, type: "expense", category: "Shopping", date: `${currentMonth}-10`, note: "Clothes and basics" },
+      { id: "txn-8", title: "Movie Night", amount: 1200, type: "expense", category: "Entertainment", date: `${currentMonth}-12`, note: "Weekend outing" },
+      { id: "txn-9", title: "Health Checkup", amount: 2500, type: "expense", category: "Health", date: `${currentMonth}-14`, note: "Routine visit" },
+      { id: "txn-10", title: "Emergency Fund", amount: 10000, type: "expense", category: "Savings", date: `${currentMonth}-15`, note: "Monthly transfer" },
+      { id: "txn-11", title: "Restaurant Dinner", amount: 3200, type: "expense", category: "Food", date: `${currentMonth}-18`, note: "Family dinner" },
+      { id: "txn-12", title: "Utility Bill", amount: 3100, type: "expense", category: "Bills", date: `${currentMonth}-20`, note: "Electricity and water" },
+      { id: "txn-13", title: "Taxi Reimbursement", amount: 1800, type: "income", category: "Freelance", date: `${currentMonth}-21`, note: "Client reimbursement" },
+      { id: "txn-14", title: "Weekend Train", amount: 900, type: "expense", category: "Travel", date: `${currentMonth}-22`, note: "City trip" },
+      { id: "txn-15", title: "Previous Month Rent", amount: 18000, type: "expense", category: "Bills", date: previousMonthDate(3), note: "Apartment rent" },
+      { id: "txn-16", title: "Previous Month Groceries", amount: 3800, type: "expense", category: "Food", date: previousMonthDate(9), note: "Stock-up" },
+      { id: "txn-17", title: "Previous Month Salary", amount: 85000, type: "income", category: "Salary", date: previousMonthDate(1), note: "Primary paycheck" },
+      { id: "txn-18", title: "Previous Month Shopping", amount: 4500, type: "expense", category: "Shopping", date: previousMonthDate(15), note: "Home supplies" }
     ]
   };
 }
@@ -132,16 +131,21 @@ export function buildInsights({ transactions, totals, monthlyTrend, budgetUsage 
 
 export function buildAssistantReply(question, state) {
   const normalized = question.toLowerCase();
-  const expenseTotal = state.transactions
-    .filter((item) => item.type === "expense" && item.date.startsWith(currentMonth))
+  const currentTransactions = state.transactions.filter((item) => item.date.startsWith(currentMonth));
+  const expenseTotal = currentTransactions
+    .filter((item) => item.type === "expense")
     .reduce((sum, item) => sum + item.amount, 0);
-  const topCategory = state.transactions
-    .filter((item) => item.type === "expense" && item.date.startsWith(currentMonth))
+  const incomeTotal = currentTransactions
+    .filter((item) => item.type === "income")
+    .reduce((sum, item) => sum + item.amount, 0);
+  const groupedExpenses = currentTransactions
+    .filter((item) => item.type === "expense")
     .reduce((acc, item) => {
       acc[item.category] = (acc[item.category] || 0) + item.amount;
       return acc;
     }, {});
-  const highestCategory = Object.entries(topCategory).sort((a, b) => b[1] - a[1])[0];
+  const highestCategory = Object.entries(groupedExpenses).sort((a, b) => b[1] - a[1])[0];
+  const freeCash = Math.max(incomeTotal - expenseTotal, 0);
 
   if (normalized.includes("how much") && normalized.includes("spend")) {
     return `You spent ${formatCurrency(expenseTotal)} this month so far. The largest share went to ${
@@ -150,14 +154,36 @@ export function buildAssistantReply(question, state) {
   }
 
   if (normalized.includes("save")) {
-    return `You can save money by trimming ${highestCategory?.[0] || "your top spending category"}. Reducing it by 10% would keep more cash free for your goals.`;
+    return `Start with ${highestCategory?.[0] || "your highest spending category"}. Cutting it by 10% could free about ${formatCurrency(
+      Math.round((highestCategory?.[1] || expenseTotal) * 0.1)
+    )} for your goals.`;
   }
 
   if (normalized.includes("budget")) {
     return `Your monthly budget is ${formatCurrency(
       state.budget.monthlyBudget
-    )}. Focus on bills first, then cap flexible categories like food and shopping.`;
+    )}. You have spent ${formatCurrency(expenseTotal)}, so keep bills first and cap flexible categories like food and shopping.`;
   }
 
-  return "I can summarize monthly spending, highlight categories to reduce, and compare this month with last month. Try asking about savings, budget, or total spending.";
+  if (
+    normalized.includes("invest") ||
+    normalized.includes("investment") ||
+    normalized.includes("share") ||
+    normalized.includes("stock") ||
+    normalized.includes("where")
+  ) {
+    const emergencyFund = Math.round(freeCash * 0.5);
+    const investments = Math.round(freeCash * 0.3);
+    const flexibleSpend = Math.round(freeCash * 0.2);
+
+    return `Based on this month, you have about ${formatCurrency(freeCash)} free cash. A practical split is ${formatCurrency(
+      emergencyFund
+    )} for emergency savings, ${formatCurrency(
+      investments
+    )} for SIPs, index funds, or carefully researched Indian shares, and ${formatCurrency(
+      flexibleSpend
+    )} for planned spending. Direct stocks should come after essentials, insurance, and emergency funds.`;
+  }
+
+  return "I can summarize monthly spending, highlight categories to reduce, and suggest a simple save-or-invest split in INR. Try asking where to invest or where to reduce spending.";
 }

@@ -1,4 +1,5 @@
-import { FiArrowDownRight, FiArrowUpRight, FiCreditCard, FiDollarSign } from "react-icons/fi";
+import { FiArrowDownRight, FiArrowUpRight, FiCreditCard } from "react-icons/fi";
+import { FaRupeeSign } from "react-icons/fa";
 import BudgetCard from "../components/BudgetCard";
 import GoalCard from "../components/GoalCard";
 import InsightCard from "../components/InsightCard";
@@ -28,7 +29,7 @@ export default function DashboardPage() {
         <SummaryCard
           title="Total Balance"
           value={totals.balance}
-          icon={FiDollarSign}
+          icon={FaRupeeSign}
           accent="linear-gradient(135deg, #0f766e, #34d399)"
           trend={{ label: "Healthy cash position", positive: true }}
         />

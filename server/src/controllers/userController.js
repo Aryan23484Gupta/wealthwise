@@ -1,6 +1,9 @@
 const asyncHandler = require("../utils/asyncHandler");
 const { AppError } = require("../utils/errors");
+const PasswordResetToken = require("../../models/PasswordResetToken");
+const Transaction = require("../../models/Transaction");
 const User = require("../../models/User");
+const { hashPassword, verifyPassword } = require("../../utils/password");
 const { generateId, mapGoal, buildStatePayload } = require("../utils/userState");
 
 function parsePositiveNumber(value, fieldName, { allowZero = false } = {}) {
@@ -76,6 +79,52 @@ const updateBudget = asyncHandler(async (req, res) => {
   });
 });
 
+const changePassword = asyncHandler(async (req, res) => {
+  const currentPassword = req.body.currentPassword;
+  const newPassword = req.body.newPassword;
+
+  if (!currentPassword || !newPassword) {
+    throw new AppError("Current password and new password are required.", 400);
+  }
+
+  if (newPassword.length < 6) {
+    throw new AppError("New password must be at least 6 characters long.", 400);
+  }
+
+  const passwordMatches = await verifyPassword(currentPassword, req.user.passwordHash);
+  if (!passwordMatches) {
+    throw new AppError("Current password is incorrect.", 401);
+  }
+
+  req.user.passwordHash = await hashPassword(newPassword);
+  await req.user.save();
+
+  res.json({
+    message: "Password changed successfully."
+  });
+});
+
+const deleteAccount = asyncHandler(async (req, res) => {
+  const password = req.body.password;
+
+  if (!password) {
+    throw new AppError("Password is required to delete your account.", 400);
+  }
+
+  const passwordMatches = await verifyPassword(password, req.user.passwordHash);
+  if (!passwordMatches) {
+    throw new AppError("Password is incorrect.", 401);
+  }
+
+  await Transaction.deleteMany({ userId: req.user._id });
+  await PasswordResetToken.deleteMany({ userId: req.user._id });
+  await User.deleteOne({ _id: req.user._id });
+
+  res.json({
+    message: "Account deleted permanently."
+  });
+});
+
 const addGoal = asyncHandler(async (req, res) => {
   const title = req.body.title?.trim();
   const target = parsePositiveNumber(req.body.target, "Goal target");
@@ -128,7 +177,9 @@ const contributeToGoal = asyncHandler(async (req, res) => {
 
 module.exports = {
   addGoal,
+  changePassword,
   contributeToGoal,
+  deleteAccount,
   updateBudget,
   updatePreferences,
   updateProfile

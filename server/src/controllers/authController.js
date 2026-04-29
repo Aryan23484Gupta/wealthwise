@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const PendingSignup = require("../../models/PendingSignup");
+const PasswordResetToken = require("../../models/PasswordResetToken");
 const Transaction = require("../../models/Transaction");
 const User = require("../../models/User");
 const { hashPassword, verifyPassword } = require("../../utils/password");
@@ -14,6 +15,7 @@ const {
 } = require("../utils/userState");
 
 const OTP_EXPIRY_MINUTES = 10;
+const PASSWORD_RESET_EXPIRY_MINUTES = 10;
 
 function mapTransaction(transaction) {
   return {
@@ -101,6 +103,151 @@ async function sendWelcomeEmail(req, { email, name }) {
 
   return true;
 }
+
+async function sendPasswordResetEmail(req, { email, name, otpCode, otpExpiresAt }) {
+  const emailService = req.app.locals.emailService;
+
+  if (!emailService?.isConfigured()) {
+    return false;
+  }
+
+  const expiryTime = new Date(otpExpiresAt).toLocaleString("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  });
+
+  await emailService.sendMail({
+    to: email,
+    subject: "Reset your WealthWise password",
+    text: [
+      `Hi ${name},`,
+      "",
+      `Your WealthWise password reset OTP is ${otpCode}.`,
+      `This code expires on ${expiryTime}.`,
+      "",
+      "If you did not request this, you can ignore this email."
+    ].join("\n"),
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #1f2937;">
+        <h2 style="margin-bottom: 8px;">Reset your WealthWise password</h2>
+        <p>Hi ${name},</p>
+        <p>Your password reset OTP is:</p>
+        <p style="font-size: 28px; font-weight: 700; letter-spacing: 4px; margin: 16px 0;">${otpCode}</p>
+        <p>This code expires on <strong>${expiryTime}</strong>.</p>
+        <p>If you did not request this, you can ignore this email.</p>
+      </div>
+    `
+  });
+
+  return true;
+}
+
+const requestPasswordReset = asyncHandler(async (req, res) => {
+  const email = req.body.email?.trim().toLowerCase();
+
+  if (!email) {
+    throw new AppError("Email is required.", 400);
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    res.json({
+      message: "If an account exists for this email, a password reset OTP has been sent."
+    });
+    return;
+  }
+
+  const otpCode = generateOtpCode();
+  const otpExpiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRY_MINUTES * 60 * 1000);
+
+  await PasswordResetToken.findOneAndUpdate(
+    { email },
+    {
+      userId: user._id,
+      email,
+      otpHash: hashSessionToken(otpCode),
+      otpExpiresAt,
+      attemptsRemaining: 5,
+      verified: false,
+      verifiedAt: null
+    },
+    {
+      upsert: true,
+      returnDocument: "after",
+      setDefaultsOnInsert: true
+    }
+  );
+
+  console.log(`Password reset OTP for ${email}: ${otpCode}`);
+
+  try {
+    await sendPasswordResetEmail(req, {
+      email,
+      name: user.name,
+      otpCode,
+      otpExpiresAt
+    });
+  } catch (error) {
+    throw new AppError(`Failed to send password reset OTP email: ${error.message}`, 502);
+  }
+
+  res.json({
+    message: "Password reset OTP sent. Enter the code and your new password.",
+    email,
+    otpExpiresAt,
+    developmentOtp: getOtpPreview(otpCode)
+  });
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const email = req.body.email?.trim().toLowerCase();
+  const otp = req.body.otp?.trim();
+  const password = req.body.password;
+
+  if (!email || !otp || !password) {
+    throw new AppError("Email, OTP, and new password are required.", 400);
+  }
+
+  if (password.length < 6) {
+    throw new AppError("Password must be at least 6 characters long.", 400);
+  }
+
+  const resetToken = await PasswordResetToken.findOne({ email });
+  if (!resetToken) {
+    throw new AppError("Password reset session not found. Request a new OTP.", 404);
+  }
+
+  if (resetToken.otpExpiresAt.getTime() < Date.now()) {
+    await PasswordResetToken.deleteOne({ _id: resetToken._id });
+    throw new AppError("OTP has expired. Request a new code.", 410);
+  }
+
+  if (resetToken.attemptsRemaining <= 0) {
+    await PasswordResetToken.deleteOne({ _id: resetToken._id });
+    throw new AppError("Too many invalid attempts. Request a new OTP.", 429);
+  }
+
+  if (resetToken.otpHash !== hashSessionToken(otp)) {
+    resetToken.attemptsRemaining -= 1;
+    await resetToken.save();
+    throw new AppError("Invalid OTP. Please try again.", 400);
+  }
+
+  const user = await User.findById(resetToken.userId);
+  if (!user) {
+    await PasswordResetToken.deleteOne({ _id: resetToken._id });
+    throw new AppError("User not found.", 404);
+  }
+
+  user.passwordHash = await hashPassword(password);
+  user.sessionTokenHash = null;
+  await user.save();
+  await PasswordResetToken.deleteOne({ _id: resetToken._id });
+
+  res.json({
+    message: "Password reset successfully. Please log in with your new password."
+  });
+});
 
 const requestSignupOtp = asyncHandler(async (req, res) => {
   const name = req.body.name?.trim();
@@ -334,9 +481,11 @@ module.exports = {
   getSession,
   login,
   logout,
+  requestPasswordReset,
   mapTransaction,
   requestSignupOtp,
   requireUser,
+  resetPassword,
   resendSignupOtp,
   verifySignupOtp
 };

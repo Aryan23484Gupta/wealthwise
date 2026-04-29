@@ -4,7 +4,18 @@ import SectionCard from "../components/SectionCard";
 import { useFinance } from "../context/FinanceContext";
 
 export default function SettingsPage() {
-  const { user, preferences, updateProfile, toggleTheme, goals, contributeToGoal, addGoal, notifications } =
+  const {
+    user,
+    preferences,
+    updateProfile,
+    toggleTheme,
+    goals,
+    contributeToGoal,
+    addGoal,
+    notifications,
+    changePassword,
+    deleteAccount
+  } =
     useFinance();
   const [form, setForm] = useState({
     name: user.name,
@@ -60,6 +71,44 @@ export default function SettingsPage() {
     }
   }
 
+  async function handlePasswordSubmit(event) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    setError("");
+    setStatus("");
+
+    try {
+      await changePassword({
+        currentPassword: formData.get("currentPassword"),
+        newPassword: formData.get("newPassword")
+      });
+      event.currentTarget.reset();
+      setStatus("Password changed.");
+    } catch (submitError) {
+      setError(submitError.message);
+    }
+  }
+
+  async function handleDeleteAccount(event) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const confirmation = formData.get("confirmation")?.trim();
+
+    setError("");
+    setStatus("");
+
+    if (confirmation !== "DELETE") {
+      setError("Type DELETE to confirm permanent account deletion.");
+      return;
+    }
+
+    try {
+      await deleteAccount(formData.get("password"));
+    } catch (submitError) {
+      setError(submitError.message);
+    }
+  }
+
   return (
     <div className="settings-layout">
       <SectionCard title="Profile" subtitle="Update your identity and account view.">
@@ -98,6 +147,46 @@ export default function SettingsPage() {
             {preferences.theme === "dark" ? "Switch to light" : "Switch to dark"}
           </button>
         </div>
+      </SectionCard>
+
+      <SectionCard title="Change password" subtitle="Update your login password securely.">
+        <form className="transaction-form" onSubmit={handlePasswordSubmit}>
+          <div className="form-grid">
+            <label>
+              Current password
+              <input name="currentPassword" type="password" required />
+            </label>
+            <label>
+              New password
+              <input name="newPassword" type="password" minLength={6} required />
+            </label>
+          </div>
+          <div className="form-actions">
+            <button type="submit" className="primary-button">
+              Change password
+            </button>
+          </div>
+        </form>
+      </SectionCard>
+
+      <SectionCard title="Delete account" subtitle="Permanently remove your profile, transactions, and settings.">
+        <form className="transaction-form danger-zone" onSubmit={handleDeleteAccount}>
+          <div className="form-grid">
+            <label>
+              Password
+              <input name="password" type="password" required />
+            </label>
+            <label>
+              Type DELETE
+              <input name="confirmation" placeholder="DELETE" required />
+            </label>
+          </div>
+          <div className="form-actions">
+            <button type="submit" className="danger-button">
+              Delete permanently
+            </button>
+          </div>
+        </form>
       </SectionCard>
 
       <SectionCard title="Notifications" subtitle="Overspending and unusual activity alerts.">

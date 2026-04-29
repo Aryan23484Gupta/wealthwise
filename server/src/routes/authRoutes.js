@@ -4,8 +4,10 @@ const {
   getSession,
   login,
   logout,
+  requestPasswordReset,
   requestSignupOtp,
   requireUser,
+  resetPassword,
   resendSignupOtp,
   verifySignupOtp
 } = require("../controllers/authController");
@@ -21,6 +23,8 @@ router.post("/signup", (req, res) => {
   });
 });
 router.post("/login", login);
+router.post("/password/forgot", requestPasswordReset);
+router.post("/password/reset", resetPassword);
 router.get("/session", requireUser, getSession);
 router.post("/logout", requireUser, logout);
 
