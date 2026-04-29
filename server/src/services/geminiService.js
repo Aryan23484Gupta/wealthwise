@@ -53,6 +53,7 @@ class GeminiService {
         "Choose `send_email` only if the user clearly asks for an email, alert, report, notification, reminder, or a message to be sent.",
         "If email details are missing, choose `reply_only` and explain what is missing in the reply.",
         "Keep the reply concise and helpful.",
+        "Format the reply for a chat UI: use short paragraphs and simple bullet or numbered lists when giving multiple suggestions.",
         "",
         `User message: ${message}`,
         `Additional context: ${JSON.stringify(context || {})}`
@@ -114,10 +115,10 @@ class GeminiService {
       reply: wantsInvestment
         ? `You have about ${rupees.format(
             freeCash
-          )} free cash this month. Consider keeping 50% for emergency savings, 30% for SIPs/index funds or researched Indian shares, and 20% for planned spending. Avoid direct stocks until essentials and emergency funds are covered.`
+          )} free cash this month.\n\n- Keep 50% for emergency savings.\n- Put 30% toward SIPs, index funds, or carefully researched Indian shares.\n- Keep 20% for planned spending.\n\nAvoid direct stocks until essentials and emergency funds are covered.`
         : `This month you have income of ${rupees.format(income)} and expenses of ${rupees.format(
             expenses
-          )}. Ask where to invest or where to reduce spending for a more specific suggestion.`
+          )}.\n\n- Ask where to invest for allocation ideas.\n- Ask where to reduce spending for category-level suggestions.`
     };
   }
 }

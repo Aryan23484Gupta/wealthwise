@@ -121,11 +121,16 @@ a {
   place-items: center;
   width: 48px;
   height: 48px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  color: white;
-  font-size: 1.4rem;
-  font-weight: 700;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--card-strong);
+  border: 1px solid var(--line);
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .brand-block h1,
@@ -541,7 +546,9 @@ a {
 .goal-card strong,
 .highlight-card h3,
 .notice-card strong,
-.chat-bubble p {
+.chat-bubble p,
+.assistant-response ul,
+.assistant-response ol {
   margin: 0;
 }
 
@@ -623,6 +630,24 @@ input[type="number"] {
   margin-bottom: 8px;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+.assistant-response {
+  display: grid;
+  gap: 12px;
+  line-height: 1.6;
+}
+
+.assistant-response ul,
+.assistant-response ol {
+  display: grid;
+  gap: 8px;
+  padding-left: 22px;
+}
+
+.assistant-response li::marker {
+  color: var(--primary);
+  font-weight: 700;
 }
 
 .prompt-list {

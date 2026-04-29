@@ -11,6 +11,7 @@ import {
   FiSun
 } from "react-icons/fi";
 import { useFinance } from "../context/FinanceContext";
+import favicon from "../Favicon.png";
 import NotificationBell from "./NotificationBell";
 
 const navItems = [
@@ -29,7 +30,9 @@ export default function Layout() {
       <aside className="sidebar">
         <div>
           <div className="brand-block">
-            <span className="brand-mark">W</span>
+            <span className="brand-mark">
+              <img src={favicon} alt="" aria-hidden="true" />
+            </span>
             <div>
               <h1>Wealthwise</h1>
               <p>AI-powered money clarity</p>
