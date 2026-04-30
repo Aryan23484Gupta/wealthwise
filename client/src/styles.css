@@ -57,6 +57,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -205,6 +210,19 @@ a {
   height: 52px;
   border-radius: 16px;
   object-fit: cover;
+}
+
+.sidebar-footer {
+  display: grid;
+  gap: 12px;
+}
+
+.developer-credit {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  text-align: center;
 }
 
 .content-area {
@@ -369,6 +387,10 @@ a {
 .danger-button {
   background: linear-gradient(135deg, var(--danger), color-mix(in srgb, var(--danger) 62%, black 38%));
   color: white;
+}
+
+.reset-button {
+  white-space: nowrap;
 }
 
 .ghost-button {

@@ -13,7 +13,14 @@ const defaultFilters = {
 };
 
 export default function TransactionsPage() {
-  const { addTransaction, updateTransaction, deleteTransaction, filteredTransactions } = useFinance();
+  const {
+    addTransaction,
+    deleteTransaction,
+    filteredTransactions,
+    resetAllTransactions,
+    transactions,
+    updateTransaction
+  } = useFinance();
   const [filters, setFilters] = useState(defaultFilters);
   const [editing, setEditing] = useState(null);
   const [submitError, setSubmitError] = useState("");
@@ -55,6 +62,21 @@ export default function TransactionsPage() {
     }
   }
 
+  async function handleResetAll() {
+    setSubmitError("");
+
+    if (!window.confirm("Reset all transactions? This cannot be undone.")) {
+      return;
+    }
+
+    try {
+      await resetAllTransactions();
+      setEditing(null);
+    } catch (error) {
+      setSubmitError(error.message);
+    }
+  }
+
   return (
     <div className="two-column">
       <SectionCard title={editing ? "Edit transaction" : "Add transaction"} subtitle="Create, update, and manage every cash movement.">
@@ -62,7 +84,15 @@ export default function TransactionsPage() {
         {submitError ? <p className="auth-error">{submitError}</p> : null}
       </SectionCard>
 
-      <SectionCard title="All transactions" subtitle="Filter by date, category, type, or minimum amount.">
+      <SectionCard
+        title="All transactions"
+        subtitle="Filter by date, category, type, or minimum amount."
+        action={
+          <button type="button" className="danger-button reset-button" onClick={handleResetAll} disabled={!transactions.length}>
+            Reset all
+          </button>
+        }
+      >
         <div className="filter-row">
           <select name="category" value={filters.category} onChange={handleChange}>
             <option>All</option>

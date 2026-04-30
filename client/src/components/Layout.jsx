@@ -54,12 +54,16 @@ export default function Layout() {
           </nav>
         </div>
 
-        <div className="profile-card">
-          <img src="https://cdn-icons-png.flaticon.com/512/3607/3607444.png" alt={user.name} />
-          <div>
-            <strong>{user.name}</strong>
-            <p>{user.role}</p>
+        <div className="sidebar-footer">
+          <div className="profile-card">
+            <img src="https://cdn-icons-png.flaticon.com/512/3607/3607444.png" alt={user.name} />
+            <div>
+              <strong>{user.name}</strong>
+              <p>{user.role}</p>
+            </div>
           </div>
+
+          <p className="developer-credit">Developed by Aryan Kumar and Sonam Kumari</p>
         </div>
       </aside>
 

@@ -118,9 +118,19 @@ const deleteTransaction = asyncHandler(async (req, res) => {
   res.json({ message: "Transaction deleted successfully." });
 });
 
+const resetTransactions = asyncHandler(async (req, res) => {
+  const result = await Transaction.deleteMany({ userId: req.user._id });
+
+  res.json({
+    message: "All transactions reset successfully.",
+    deletedCount: result.deletedCount
+  });
+});
+
 module.exports = {
   createTransaction,
   deleteTransaction,
   getTransactions,
+  resetTransactions,
   updateTransaction
 };

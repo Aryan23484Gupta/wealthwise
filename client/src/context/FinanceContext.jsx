@@ -433,6 +433,18 @@ export function FinanceProvider({ children }) {
           transactions: current.transactions.filter((item) => item.id !== transactionId)
         }));
       },
+      resetAllTransactions: async () => {
+        if (authToken) {
+          await request("/api/transactions", {
+            method: "DELETE"
+          });
+        }
+
+        setState((current) => ({
+          ...current,
+          transactions: []
+        }));
+      },
       setBudget: async (amount) => {
         const monthlyBudget = Number(amount);
 
