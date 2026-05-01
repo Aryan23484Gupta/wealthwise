@@ -46,7 +46,7 @@ app.get("/health", async (req, res, next) => {
       success: true,
       status: "ok",
       services: {
-        gemini: Boolean(env.geminiApiKey),
+        aiProviders: req.app.locals.aiAssistantService?.getStatus() || {},
         email: emailStatus
       },
       timestamp: new Date().toISOString()

@@ -472,6 +472,25 @@ a {
   margin-bottom: 18px;
 }
 
+.provider-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+}
+
+.provider-selector span {
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.provider-selector select {
+  min-width: 150px;
+  border-radius: 14px;
+  font-weight: 700;
+}
+
 .table-wrap {
   overflow-x: auto;
 }

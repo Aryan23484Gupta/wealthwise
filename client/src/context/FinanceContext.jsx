@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { buildAssistantReply, buildInsights, createSeedData } from "../data/mockData";
+import { buildInsights, createSeedData } from "../data/mockData";
 import {
   computeCategoryBreakdown,
   computeMonthlyTrend,
@@ -534,33 +534,37 @@ export function FinanceProvider({ children }) {
         applyState(data.state);
         return data.goal;
       },
-      askAssistant: async (question) => {
+      askAssistant: async (question, provider = "openai") => {
+        const response = await fetch(`${API_BASE_URL}/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            provider,
+            message: question,
+            context: {
+              user: state.user,
+              budget: state.budget,
+              goals: state.goals,
+              transactions: state.transactions
+            }
+          })
+        });
+
+        let data = {};
+
         try {
-          const response = await fetch(`${API_BASE_URL}/chat`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              message: question,
-              context: {
-                user: state.user,
-                budget: state.budget,
-                goals: state.goals,
-                transactions: state.transactions
-              }
-            })
-          });
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.message || "Assistant request failed.");
-          }
-
-          return data.message;
+          data = await response.json();
         } catch {
-          return buildAssistantReply(question, state);
+          data = {};
         }
+
+        if (!response.ok) {
+          throw new Error(data.message || "Assistant request failed.");
+        }
+
+        return data.message;
       }
     };
   }, [authToken, isBootstrapping, notificationsError, notificationsLoading, state]);

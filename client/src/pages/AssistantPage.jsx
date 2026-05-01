@@ -4,9 +4,16 @@ import InsightCard from "../components/InsightCard";
 import SectionCard from "../components/SectionCard";
 import { useFinance } from "../context/FinanceContext";
 
+const AI_PROVIDERS = [
+  { id: "openai", label: "OpenAI" },
+  { id: "groq", label: "Groq" },
+  { id: "gemini", label: "Gemini" }
+];
+
 export default function AssistantPage() {
   const { assistantMessages, askAssistant, insights } = useFinance();
   const [messages, setMessages] = useState(assistantMessages);
+  const [selectedProvider, setSelectedProvider] = useState("openai");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
 
@@ -26,7 +33,7 @@ export default function AssistantPage() {
     setMessages((current) => [...current, { id: `user-${Date.now()}`, role: "user", text: question }]);
 
     try {
-      const reply = await askAssistant(question);
+      const reply = await askAssistant(question, selectedProvider);
       setMessages((current) => [
         ...current,
         { id: `assistant-${Date.now()}`, role: "assistant", text: reply }
@@ -41,7 +48,22 @@ export default function AssistantPage() {
   return (
     <div className="assistant-layout">
       <SectionCard
-        title="Finance copilot"
+        title={
+          <label className="provider-selector">
+            <span>AI provider</span>
+            <select
+              value={selectedProvider}
+              onChange={(event) => setSelectedProvider(event.target.value)}
+              disabled={isSending}
+            >
+              {AI_PROVIDERS.map((provider) => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        }
         subtitle='Ask things like "How much did I spend this month?" or "Where can I save money?"'
       >
         <ChatPanel messages={messages} onSend={handleSend} isSending={isSending} />
