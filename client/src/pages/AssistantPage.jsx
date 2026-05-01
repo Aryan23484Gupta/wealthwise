@@ -11,9 +11,8 @@ const AI_PROVIDERS = [
 ];
 
 export default function AssistantPage() {
-  const { assistantMessages, askAssistant, insights } = useFinance();
-  const [messages, setMessages] = useState(assistantMessages);
-  const [selectedProvider, setSelectedProvider] = useState("openai");
+  const { assistantMessages, askAssistant, appendAssistantMessage, clearAssistantChat, insights } = useFinance();
+  const [selectedProvider, setSelectedProvider] = useState("groq");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
 
@@ -22,7 +21,8 @@ export default function AssistantPage() {
       "How much did I spend this month?",
       "Where can I save money?",
       "Am I close to my budget limit?",
-      "Where should I invest my extra money?"
+      "Where should I invest my extra money?",
+      "What are my biggest expenses?"
     ],
     []
   );
@@ -30,14 +30,11 @@ export default function AssistantPage() {
   async function handleSend(question) {
     setError("");
     setIsSending(true);
-    setMessages((current) => [...current, { id: `user-${Date.now()}`, role: "user", text: question }]);
+    appendAssistantMessage({ id: `user-${Date.now()}`, role: "user", text: question });
 
     try {
       const reply = await askAssistant(question, selectedProvider);
-      setMessages((current) => [
-        ...current,
-        { id: `assistant-${Date.now()}`, role: "assistant", text: reply }
-      ]);
+      appendAssistantMessage({ id: `assistant-${Date.now()}`, role: "assistant", text: reply });
     } catch (sendError) {
       setError(sendError.message);
     } finally {
@@ -64,9 +61,19 @@ export default function AssistantPage() {
             </select>
           </label>
         }
+        action={
+          <button
+            type="button"
+            className="ghost-button clear-chat-button"
+            onClick={clearAssistantChat}
+            disabled={isSending || assistantMessages.length <= 1}
+          >
+            Clear chat
+          </button>
+        }
         subtitle='Ask things like "How much did I spend this month?" or "Where can I save money?"'
       >
-        <ChatPanel messages={messages} onSend={handleSend} isSending={isSending} />
+        <ChatPanel messages={assistantMessages} onSend={handleSend} isSending={isSending} />
         {error ? <p className="auth-error">{error}</p> : null}
       </SectionCard>
 

@@ -84,39 +84,78 @@ export function createSeedData() {
 }
 
 export function buildInsights({ transactions, totals, monthlyTrend, budgetUsage }) {
-  const [previous = { expenses: 0, income: 0 }, current = { expenses: totals.expenses, income: totals.income }] =
+  const currentTransactions = transactions.filter((item) => String(item.date || "").startsWith(currentMonth));
+  const currentExpenses = currentTransactions.filter((item) => item.type === "expense");
+  const currentIncome = currentTransactions
+    .filter((item) => item.type === "income")
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const currentSpend = currentExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const groupedExpenses = currentExpenses.reduce((acc, item) => {
+    acc[item.category] = (acc[item.category] || 0) + Number(item.amount || 0);
+    return acc;
+  }, {});
+  const topCategory = Object.entries(groupedExpenses).sort((a, b) => b[1] - a[1])[0];
+  const largestExpense = [...currentExpenses].sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0))[0];
+  const [previous = { expenses: 0, income: 0 }, current = { expenses: currentSpend, income: currentIncome }] =
     monthlyTrend.slice(-2);
+  const previousNet = Number(previous.income || 0) - Number(previous.expenses || 0);
+  const currentNet = Number(current.income || currentIncome) - Number(current.expenses || currentSpend);
+  const savingsDelta = currentNet - previousNet;
+  const spendDelta = previous.expenses
+    ? Math.round(((Number(current.expenses || currentSpend) - Number(previous.expenses || 0)) / previous.expenses) * 100)
+    : 0;
 
-  const foodSpend = transactions
-    .filter((item) => item.type === "expense" && item.category === "Food" && item.date.startsWith(currentMonth))
-    .reduce((sum, item) => sum + item.amount, 0);
-  const priorFoodSpend = transactions
-    .filter((item) => item.type === "expense" && item.category === "Food" && !item.date.startsWith(currentMonth))
-    .reduce((sum, item) => sum + item.amount, 0);
-  const foodDelta = priorFoodSpend ? Math.round(((foodSpend - priorFoodSpend) / priorFoodSpend) * 100) : 0;
-  const savingsDelta = current.income - current.expenses - (previous.income - previous.expenses);
+  if (!transactions.length) {
+    return [
+      {
+        id: "insight-empty",
+        tone: "info",
+        title: "No transactions yet",
+        description: "Add income and expenses to unlock spending trends, budget alerts, and savings insights."
+      }
+    ];
+  }
+
+  if (!currentTransactions.length) {
+    return [
+      {
+        id: "insight-no-current-month",
+        tone: "info",
+        title: "No activity this month",
+        description: "This month's AI highlights will appear as soon as you add a current-month transaction."
+      },
+      {
+        id: "insight-all-time",
+        tone: totals.balance >= 0 ? "positive" : "warning",
+        title: "All-time balance",
+        description: `Across all transactions, your balance is ${formatCurrency(totals.balance)}.`
+      }
+    ];
+  }
 
   return [
     {
-      id: "insight-1",
-      tone: foodDelta > 0 ? "warning" : "positive",
-      title: "Food trend",
-      description:
-        foodDelta > 0
-          ? `You spent ${foodDelta}% more on food this month. Meal planning could flatten that curve.`
-          : "Food spending is steady or lower than last month."
+      id: "insight-top-category",
+      tone: topCategory ? "warning" : "positive",
+      title: topCategory ? `Top spend: ${topCategory[0]}` : "No expenses yet",
+      description: topCategory
+        ? `${topCategory[0]} is your highest expense category this month at ${formatCurrency(topCategory[1])}.`
+        : `You have recorded ${formatCurrency(currentIncome)} income and no expenses this month.`
     },
     {
-      id: "insight-2",
-      tone: savingsDelta < 0 ? "warning" : "positive",
-      title: "Savings momentum",
-      description:
-        savingsDelta < 0
-          ? "Your savings decreased compared to last month. Bills and shopping are the biggest drivers."
-          : "Savings improved compared to last month. Keep leaning on consistent income and lower impulse spends."
+      id: "insight-spend-change",
+      tone: spendDelta > 10 ? "warning" : spendDelta < 0 ? "positive" : "info",
+      title: "Monthly spend trend",
+      description: previous.expenses
+        ? spendDelta > 0
+          ? `Expenses are up ${spendDelta}% compared to last month.`
+          : spendDelta < 0
+            ? `Expenses are down ${Math.abs(spendDelta)}% compared to last month.`
+            : "Expenses are flat compared to last month."
+        : `You have spent ${formatCurrency(currentSpend)} this month.`
     },
     {
-      id: "insight-3",
+      id: "insight-budget",
       tone: budgetUsage.percentage > 90 ? "warning" : "info",
       title: "Budget pulse",
       description:
@@ -125,6 +164,25 @@ export function buildInsights({ transactions, totals, monthlyTrend, budgetUsage 
           : `You have used ${budgetUsage.percentage}% of your budget, leaving ${formatCurrency(
               budgetUsage.remaining
             )} available.`
+    },
+    {
+      id: "insight-savings",
+      tone: currentNet < 0 || savingsDelta < 0 ? "warning" : "positive",
+      title: "Savings position",
+      description:
+        currentNet < 0
+          ? `This month is negative by ${formatCurrency(Math.abs(currentNet))}. Reduce flexible spending first.`
+          : savingsDelta < 0
+            ? `You are saving ${formatCurrency(Math.abs(savingsDelta))} less than last month.`
+            : `Current monthly surplus is ${formatCurrency(currentNet)}.`
+    },
+    {
+      id: "insight-largest-expense",
+      tone: largestExpense ? "info" : "positive",
+      title: largestExpense ? "Largest expense" : "Clean expense slate",
+      description: largestExpense
+        ? `${largestExpense.title} is your largest transaction this month at ${formatCurrency(largestExpense.amount)}.`
+        : "No expense entries are recorded for the current month."
     }
   ];
 }

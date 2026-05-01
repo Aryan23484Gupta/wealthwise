@@ -13,9 +13,14 @@ import {
 
 const FinanceContext = createContext(null);
 const STORAGE_KEY = "wealthwise-finance-state";
+const CHAT_STORAGE_KEY = "wealthwise-assistant-messages";
 const TOKEN_STORAGE_KEY = "wealthwise-auth-token";
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const seedState = createSeedData();
+
+function createInitialAssistantMessages() {
+  return createSeedData().assistantMessages;
+}
 
 function createGuestState(theme = seedState.preferences.theme) {
   return {
@@ -26,21 +31,51 @@ function createGuestState(theme = seedState.preferences.theme) {
   };
 }
 
+function readSessionAssistantMessages() {
+  const fallbackMessages = createInitialAssistantMessages();
+  const stored = window.sessionStorage.getItem(CHAT_STORAGE_KEY);
+
+  if (!stored) {
+    return fallbackMessages;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) && parsed.length ? parsed : fallbackMessages;
+  } catch {
+    window.sessionStorage.removeItem(CHAT_STORAGE_KEY);
+    return fallbackMessages;
+  }
+}
+
+function removeAssistantMessages(state) {
+  const { assistantMessages, ...persistableState } = state;
+  return persistableState;
+}
+
 function parseStoredState() {
+  const assistantMessages = readSessionAssistantMessages();
   const stored = window.localStorage.getItem(STORAGE_KEY);
 
   if (!stored) {
-    return createGuestState();
+    return {
+      ...createGuestState(),
+      assistantMessages
+    };
   }
 
   try {
     return {
       ...createGuestState(),
-      ...JSON.parse(stored)
+      ...JSON.parse(stored),
+      assistantMessages
     };
   } catch {
     window.localStorage.removeItem(STORAGE_KEY);
-    return createGuestState();
+    return {
+      ...createGuestState(),
+      assistantMessages
+    };
   }
 }
 
@@ -74,8 +109,12 @@ export function FinanceProvider({ children }) {
   const [notificationsError, setNotificationsError] = useState("");
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(removeAssistantMessages(state)));
   }, [state]);
+
+  useEffect(() => {
+    window.sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(state.assistantMessages));
+  }, [state.assistantMessages]);
 
   useEffect(() => {
     if (authToken) {
@@ -115,6 +154,7 @@ export function FinanceProvider({ children }) {
         }
 
         setAuthToken("");
+        window.sessionStorage.removeItem(CHAT_STORAGE_KEY);
         setState((current) => createGuestState(current.preferences.theme));
       } finally {
         if (isMounted) {
@@ -308,6 +348,7 @@ export function FinanceProvider({ children }) {
           // Ignore logout failures and clear the local session anyway.
         } finally {
           setAuthToken("");
+          window.sessionStorage.removeItem(CHAT_STORAGE_KEY);
           setState(createGuestState(theme));
         }
       },
@@ -495,6 +536,7 @@ export function FinanceProvider({ children }) {
           body: JSON.stringify({ password })
         });
         setAuthToken("");
+        window.sessionStorage.removeItem(CHAT_STORAGE_KEY);
         setState(createGuestState(state.preferences.theme));
       },
       addGoal: async (goal) => {
@@ -565,6 +607,20 @@ export function FinanceProvider({ children }) {
         }
 
         return data.message;
+      },
+      appendAssistantMessage: (message) => {
+        setState((current) => ({
+          ...current,
+          assistantMessages: [...current.assistantMessages, message]
+        }));
+      },
+      clearAssistantChat: () => {
+        const initialMessages = createInitialAssistantMessages();
+        window.sessionStorage.removeItem(CHAT_STORAGE_KEY);
+        setState((current) => ({
+          ...current,
+          assistantMessages: initialMessages
+        }));
       }
     };
   }, [authToken, isBootstrapping, notificationsError, notificationsLoading, state]);
