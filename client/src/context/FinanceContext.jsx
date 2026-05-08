@@ -6,6 +6,7 @@ import {
   computeMonthlyTrendWindow,
   computeTotals,
   createGoalContributionTransaction,
+  createGoalRefundTransaction,
   filterTransactions,
   generateId,
   getCurrentMonthKey,
@@ -613,9 +614,13 @@ export function FinanceProvider({ children }) {
       addGoal: async (goal) => {
         if (!authToken) {
           const fallbackGoal = { ...goal, id: generateId("goal") };
+          const initialContribution = createGoalContributionTransaction(fallbackGoal, fallbackGoal.saved);
           setState((current) => ({
             ...current,
-            goals: [...current.goals, fallbackGoal]
+            goals: [...current.goals, fallbackGoal],
+            transactions: initialContribution
+              ? [initialContribution, ...current.transactions]
+              : current.transactions
           }));
           return fallbackGoal;
         }
@@ -625,6 +630,14 @@ export function FinanceProvider({ children }) {
           body: JSON.stringify(goal)
         });
         applyState(data.state);
+        if (data.transaction) {
+          setState((current) => ({
+            ...current,
+            transactions: current.transactions.some((item) => item.id === data.transaction.id)
+              ? current.transactions
+              : [data.transaction, ...current.transactions]
+          }));
+        }
         return data.goal;
       },
       contributeToGoal: async (goalId, amount) => {
@@ -678,7 +691,17 @@ export function FinanceProvider({ children }) {
         if (!authToken) {
           setState((current) => ({
             ...current,
-            goals: current.goals.filter((goal) => goal.id !== goalId)
+            ...(() => {
+              const goal = current.goals.find((item) => item.id === goalId);
+              const refundTransaction = createGoalRefundTransaction(goal);
+
+              return {
+                goals: current.goals.filter((item) => item.id !== goalId),
+                transactions: refundTransaction
+                  ? [refundTransaction, ...current.transactions]
+                  : current.transactions
+              };
+            })()
           }));
           return;
         }
@@ -687,6 +710,14 @@ export function FinanceProvider({ children }) {
           method: "DELETE"
         });
         applyState(data.state);
+        if (data.transaction) {
+          setState((current) => ({
+            ...current,
+            transactions: current.transactions.some((item) => item.id === data.transaction.id)
+              ? current.transactions
+              : [data.transaction, ...current.transactions]
+          }));
+        }
       },
       askAssistant: async (question, provider = "openai") => {
         const response = await fetch(`${API_BASE_URL}/chat`, {

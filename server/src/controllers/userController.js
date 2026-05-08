@@ -1,3 +1,6 @@
+const fs = require("fs/promises");
+const path = require("path");
+
 const asyncHandler = require("../utils/asyncHandler");
 const { AppError } = require("../utils/errors");
 const PasswordResetToken = require("../../models/PasswordResetToken");
@@ -38,7 +41,7 @@ function parseContributionDate(value) {
 function buildGoalContributionTransaction({ userId, goal, amount, date }) {
   return {
     userId,
-    title: `${goal.title} goal contribution`,
+    title: `${formatCurrency(amount)} contributed to goal: ${goal.title}`,
     amount,
     type: "expense",
     category: "Savings",
@@ -47,10 +50,106 @@ function buildGoalContributionTransaction({ userId, goal, amount, date }) {
   };
 }
 
+function formatCurrency(value) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0
+  }).format(Number(value) || 0);
+}
+
+function buildGoalRefundTransaction({ userId, goal, amount }) {
+  return {
+    userId,
+    title: `${formatCurrency(amount)} refunded from deleted goal: ${goal.title}`,
+    amount,
+    type: "income",
+    category: "Savings",
+    date: new Date(),
+    note: `Refunded because the savings goal "${goal.title}" was deleted.`
+  };
+}
+
+async function getNetBalance(userId) {
+  const [totals = { income: 0, expenses: 0 }] = await Transaction.aggregate([
+    { $match: { userId } },
+    {
+      $group: {
+        _id: null,
+        income: {
+          $sum: {
+            $cond: [{ $eq: ["$type", "income"] }, "$amount", 0]
+          }
+        },
+        expenses: {
+          $sum: {
+            $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0]
+          }
+        }
+      }
+    }
+  ]);
+
+  return Number(totals.income || 0) - Number(totals.expenses || 0);
+}
+
+async function assertGoalContributionWithinBalance(userId, amount) {
+  const availableBalance = await getNetBalance(userId);
+
+  if (Number(amount || 0) > availableBalance) {
+    throw new AppError(
+      `You only have ${formatCurrency(
+        availableBalance
+      )} available. Please enter a goal contribution amount less than or equal to your net balance.`,
+      400
+    );
+  }
+}
+
+async function saveAvatarUpload(userId, avatarData) {
+  if (!avatarData) {
+    return "";
+  }
+
+  if (typeof avatarData !== "string") {
+    throw new AppError("Profile picture must be a valid image upload.", 400);
+  }
+
+  const match = avatarData.match(/^data:(image\/(?:png|jpe?g|webp|gif));base64,([A-Za-z0-9+/=]+)$/);
+  if (!match) {
+    throw new AppError("Profile picture must be a PNG, JPG, WEBP, or GIF image.", 400);
+  }
+
+  const [, mimeType, base64Data] = match;
+  const imageBuffer = Buffer.from(base64Data, "base64");
+
+  if (!imageBuffer.length || imageBuffer.length > 750 * 1024) {
+    throw new AppError("Profile picture must be 750 KB or smaller.", 400);
+  }
+
+  const extensionByMime = {
+    "image/gif": "gif",
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp"
+  };
+  const extension = extensionByMime[mimeType];
+  const uploadDir = path.resolve(__dirname, "../../uploads/avatars");
+  const filename = `${userId}-${Date.now()}.${extension}`;
+
+  await fs.mkdir(uploadDir, { recursive: true });
+  await fs.writeFile(path.join(uploadDir, filename), imageBuffer);
+
+  return `/uploads/avatars/${filename}`;
+}
+
 const updateProfile = asyncHandler(async (req, res) => {
   const name = req.body.name?.trim();
   const role = req.body.role?.trim();
   const email = req.body.email?.trim().toLowerCase();
+  const avatar = req.body.avatar?.trim();
+  const avatarData = req.body.avatarData;
 
   if (!name || !role || !email) {
     throw new AppError("Name, role, and email are required.", 400);
@@ -68,6 +167,12 @@ const updateProfile = asyncHandler(async (req, res) => {
   req.user.name = name;
   req.user.role = role;
   req.user.email = email;
+
+  if (avatarData) {
+    req.user.avatar = await saveAvatarUpload(req.user._id, avatarData);
+  } else if (avatar) {
+    req.user.avatar = avatar;
+  }
   await req.user.save();
 
   res.json({
@@ -170,6 +275,10 @@ const addGoal = asyncHandler(async (req, res) => {
     throw new AppError("Saved amount cannot be greater than the goal target.", 400);
   }
 
+  if (saved > 0) {
+    await assertGoalContributionWithinBalance(req.user._id, saved);
+  }
+
   const goal = {
     id: generateId("goal"),
     title,
@@ -180,10 +289,22 @@ const addGoal = asyncHandler(async (req, res) => {
 
   req.user.goals = [...(req.user.goals || []), goal];
   await req.user.save();
+  const transaction =
+    saved > 0
+      ? await Transaction.create(
+          buildGoalContributionTransaction({
+            userId: req.user._id,
+            goal,
+            amount: saved,
+            date: new Date()
+          })
+        )
+      : null;
 
   res.status(201).json({
     message: "Goal added successfully.",
     goal: mapGoal(goal),
+    transaction: transaction ? mapTransaction(transaction) : null,
     state: buildStatePayload(req.user)
   });
 });
@@ -225,17 +346,30 @@ const contributeToGoal = asyncHandler(async (req, res) => {
 
 const deleteGoal = asyncHandler(async (req, res) => {
   const existingGoals = req.user.goals || [];
+  const deletedGoal = existingGoals.find((goal) => goal.id === req.params.goalId);
   const nextGoals = existingGoals.filter((goal) => goal.id !== req.params.goalId);
 
-  if (nextGoals.length === existingGoals.length) {
+  if (!deletedGoal) {
     throw new AppError("Goal not found.", 404);
   }
 
   req.user.goals = nextGoals;
   await req.user.save();
+  const refundAmount = Number(deletedGoal.saved || 0);
+  const refundTransaction =
+    refundAmount > 0
+      ? await Transaction.create(
+          buildGoalRefundTransaction({
+            userId: req.user._id,
+            goal: deletedGoal,
+            amount: refundAmount
+          })
+        )
+      : null;
 
   res.json({
     message: "Goal deleted successfully.",
+    transaction: refundTransaction ? mapTransaction(refundTransaction) : null,
     state: buildStatePayload(req.user)
   });
 });

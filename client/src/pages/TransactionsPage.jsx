@@ -4,7 +4,7 @@ import TransactionForm from "../components/TransactionForm";
 import TransactionTable from "../components/TransactionTable";
 import { categories } from "../data/mockData";
 import { useFinance } from "../context/FinanceContext";
-import { getYearOptions, monthOptions } from "../utils/finance";
+import { formatCurrency, getYearOptions, monthOptions } from "../utils/finance";
 
 const defaultFilters = {
   category: "All",
@@ -20,6 +20,7 @@ export default function TransactionsPage() {
     reportingPeriod,
     resetAllTransactions,
     setReportingPeriod,
+    totals,
     transactions,
     updateTransaction
   } = useFinance();
@@ -46,23 +47,67 @@ export default function TransactionsPage() {
     setReportingPeriod({ ...reportingPeriod, [name]: value });
   }
 
+  function getBalanceBeforeTransaction(transactionId) {
+    const transaction = transactions.find((item) => item.id === transactionId);
+
+    if (!transaction) {
+      return totals.balance;
+    }
+
+    return transaction.type === "income"
+      ? totals.balance - Number(transaction.amount || 0)
+      : totals.balance + Number(transaction.amount || 0);
+  }
+
+  function getInsufficientBalanceMessage(availableBalance) {
+    return `You only have ${formatCurrency(
+      availableBalance
+    )} available. Please enter an expense amount less than or equal to your net balance.`;
+  }
+
+  function validateExpenseBalance(transaction, transactionId) {
+    if (transaction.type !== "expense") {
+      return true;
+    }
+
+    const availableBalance = transactionId ? getBalanceBeforeTransaction(transactionId) : totals.balance;
+
+    if (Number(transaction.amount || 0) <= availableBalance) {
+      return true;
+    }
+
+    setSubmitError(getInsufficientBalanceMessage(availableBalance));
+    return false;
+  }
+
   async function handleSubmit(transaction) {
     setSubmitError("");
 
     if (editing) {
+      if (!validateExpenseBalance(transaction, editing.id)) {
+        return false;
+      }
+
       try {
         await updateTransaction(editing.id, transaction);
         setEditing(null);
+        return true;
       } catch (error) {
         setSubmitError(error.message);
+        return false;
       }
-      return;
+    }
+
+    if (!validateExpenseBalance(transaction)) {
+      return false;
     }
 
     try {
       await addTransaction(transaction);
+      return true;
     } catch (error) {
       setSubmitError(error.message);
+      return false;
     }
   }
 

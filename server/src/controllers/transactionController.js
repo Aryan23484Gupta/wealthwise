@@ -53,6 +53,62 @@ function parseTransactionPayload(payload, { partial = false } = {}) {
   };
 }
 
+function formatCurrency(value) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0
+  }).format(Number(value) || 0);
+}
+
+async function getNetBalance(userId, { excludeTransactionId } = {}) {
+  const match = {
+    userId
+  };
+
+  if (excludeTransactionId) {
+    match._id = { $ne: excludeTransactionId };
+  }
+
+  const [totals = { income: 0, expenses: 0 }] = await Transaction.aggregate([
+    { $match: match },
+    {
+      $group: {
+        _id: null,
+        income: {
+          $sum: {
+            $cond: [{ $eq: ["$type", "income"] }, "$amount", 0]
+          }
+        },
+        expenses: {
+          $sum: {
+            $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0]
+          }
+        }
+      }
+    }
+  ]);
+
+  return Number(totals.income || 0) - Number(totals.expenses || 0);
+}
+
+async function assertExpenseWithinBalance({ userId, amount, type, excludeTransactionId }) {
+  if (type !== "expense") {
+    return;
+  }
+
+  const availableBalance = await getNetBalance(userId, { excludeTransactionId });
+
+  if (Number(amount || 0) > availableBalance) {
+    throw new AppError(
+      `You only have ${formatCurrency(
+        availableBalance
+      )} available. Please enter an expense amount less than or equal to your net balance.`,
+      400
+    );
+  }
+}
+
 const getTransactions = asyncHandler(async (req, res) => {
   const transactions = await Transaction.find({ userId: req.user._id }).sort({ date: -1, createdAt: -1 });
   res.json({ transactions: transactions.map(mapTransaction) });
@@ -60,6 +116,12 @@ const getTransactions = asyncHandler(async (req, res) => {
 
 const createTransaction = asyncHandler(async (req, res) => {
   const { title, amount, type, category, date, note } = parseTransactionPayload(req.body);
+
+  await assertExpenseWithinBalance({
+    userId: req.user._id,
+    amount,
+    type
+  });
 
   const transaction = await Transaction.create({
     userId: req.user._id,
@@ -85,16 +147,24 @@ const updateTransaction = asyncHandler(async (req, res) => {
   }
 
   const updates = parseTransactionPayload(req.body, { partial: true });
+  const existingTransaction = await Transaction.findOne({ _id: transactionId, userId: req.user._id });
+
+  if (!existingTransaction) {
+    throw new AppError("Transaction not found.", 404);
+  }
+
+  await assertExpenseWithinBalance({
+    userId: req.user._id,
+    amount: updates.amount ?? existingTransaction.amount,
+    type: updates.type ?? existingTransaction.type,
+    excludeTransactionId: existingTransaction._id
+  });
 
   const transaction = await Transaction.findOneAndUpdate(
     { _id: transactionId, userId: req.user._id },
     updates,
     { new: true, runValidators: true }
   );
-
-  if (!transaction) {
-    throw new AppError("Transaction not found.", 404);
-  }
 
   res.json({
     message: "Transaction updated successfully.",

@@ -22,13 +22,16 @@ export default function TransactionForm({ onSubmit, editing, onCancel }) {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
-    onSubmit({
+    const saved = await onSubmit({
       ...form,
       amount: Number(form.amount)
     });
-    setForm(initialState);
+
+    if (saved !== false) {
+      setForm(initialState);
+    }
   }
 
   return (

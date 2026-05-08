@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import GoalCard from "../components/GoalCard";
 import SectionCard from "../components/SectionCard";
 import { useFinance } from "../context/FinanceContext";
+import { getAvatarUrl } from "../utils/avatar";
 
 export default function SettingsPage() {
   const {
@@ -22,7 +23,9 @@ export default function SettingsPage() {
   const [form, setForm] = useState({
     name: user.name,
     role: user.role,
-    email: user.email
+    email: user.email,
+    avatar: user.avatar,
+    avatarData: ""
   });
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
@@ -31,13 +34,51 @@ export default function SettingsPage() {
     setForm({
       name: user.name,
       role: user.role,
-      email: user.email
+      email: user.email,
+      avatar: user.avatar,
+      avatarData: ""
     });
-  }, [user.email, user.name, user.role]);
+  }, [user.avatar, user.email, user.name, user.role]);
 
   function handleChange(event) {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function handleAvatarChange(event) {
+    const file = event.target.files?.[0];
+
+    setError("");
+    setStatus("");
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setError("Choose a valid image file.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 750 * 1024) {
+      setError("Profile picture must be 750 KB or smaller.");
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((current) => ({
+        ...current,
+        avatar: reader.result,
+        avatarData: reader.result
+      }));
+    };
+    reader.onerror = () => {
+      setError("Unable to read that image. Try another file.");
+    };
+    reader.readAsDataURL(file);
   }
 
   async function handleProfileSubmit(event) {
@@ -115,6 +156,16 @@ export default function SettingsPage() {
     <div className="settings-layout">
       <SectionCard title="Profile" subtitle="Update your identity and account view.">
         <form className="transaction-form" onSubmit={handleProfileSubmit}>
+          <div className="avatar-upload">
+            <img
+              src={getAvatarUrl(form.avatar)}
+              alt={form.name || "Profile"}
+            />
+            <label>
+              Profile picture
+              <input type="file" accept="image/*" onChange={handleAvatarChange} />
+            </label>
+          </div>
           <div className="form-grid">
             <label>
               Name

@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
@@ -20,8 +21,15 @@ app.use(
     origin: env.clientUrl
   })
 );
-app.use(helmet());
-app.use(express.json({ limit: "1mb" }));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: {
+      policy: "cross-origin"
+    }
+  })
+);
+app.use(express.json({ limit: "2mb" }));
+app.use("/uploads", express.static(path.resolve(__dirname, "../uploads")));
 app.use(
   morgan("dev", {
     stream: {

@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   FiBarChart2,
@@ -11,6 +11,7 @@ import {
   FiSun
 } from "react-icons/fi";
 import { useFinance } from "../context/FinanceContext";
+import { getAvatarUrl } from "../utils/avatar";
 import favicon from "../Favicon.png";
 import NotificationBell from "./NotificationBell";
 
@@ -24,6 +25,7 @@ const navItems = [
 
 export default function Layout() {
   const { user, preferences, toggleTheme, logout } = useFinance();
+  const avatarSrc = getAvatarUrl(user.avatar);
 
   return (
     <div className="app-shell">
@@ -56,7 +58,9 @@ export default function Layout() {
 
         <div className="sidebar-footer">
           <div className="profile-card">
-            <img src="https://cdn-icons-png.flaticon.com/512/3607/3607444.png" alt={user.name} />
+            <Link to="/settings" className="profile-avatar-link" aria-label="Open profile settings">
+              <img src={avatarSrc} alt={user.name} />
+            </Link>
             <div>
               <strong>{user.name}</strong>
               <p>{user.role}</p>

@@ -4,6 +4,8 @@ node_modules/
 # Build folders
 dist/
 build/
+uploads/
+server/uploads/
 
 # Environment files
 .env

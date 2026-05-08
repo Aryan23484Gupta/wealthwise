@@ -42,12 +42,30 @@ export function createGoalContributionTransaction(goal, amount, options = {}) {
 
   return {
     id: options.id || generateId("txn"),
-    title: `${goal.title} goal contribution`,
+    title: `${formatCurrency(appliedAmount)} contributed to goal: ${goal.title}`,
     amount: appliedAmount,
     type: "expense",
     category: "Savings",
     date: options.date || getLocalDateKey(),
     note: `Contribution to ${goal.title} savings goal`
+  };
+}
+
+export function createGoalRefundTransaction(goal, options = {}) {
+  const refundAmount = toAmount(goal?.saved);
+
+  if (!goal || refundAmount <= 0) {
+    return null;
+  }
+
+  return {
+    id: options.id || generateId("txn"),
+    title: `${formatCurrency(refundAmount)} refunded from deleted goal: ${goal.title}`,
+    amount: refundAmount,
+    type: "income",
+    category: "Savings",
+    date: options.date || getLocalDateKey(),
+    note: `Refunded because the savings goal "${goal.title}" was deleted.`
   };
 }
 
