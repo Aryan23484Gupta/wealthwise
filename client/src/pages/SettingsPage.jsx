@@ -12,7 +12,9 @@ export default function SettingsPage() {
     goals,
     contributeToGoal,
     addGoal,
+    deleteGoal,
     notifications,
+    clearNotifications,
     changePassword,
     deleteAccount
   } =
@@ -189,7 +191,15 @@ export default function SettingsPage() {
         </form>
       </SectionCard>
 
-      <SectionCard title="Notifications" subtitle="Overspending and unusual activity alerts.">
+      <SectionCard
+        title="Notifications"
+        subtitle="Overspending and unusual activity alerts."
+        action={
+          <button type="button" className="ghost-button" onClick={clearNotifications} disabled={!notifications.length}>
+            Clear all
+          </button>
+        }
+      >
         <div className="stack-list">
           {notifications.length === 0 ? <p className="auth-message">No notifications available.</p> : null}
           {notifications.map((item) => (
@@ -234,6 +244,7 @@ export default function SettingsPage() {
               key={goal.id}
               goal={{ ...goal, percentage: Math.round((goal.saved / goal.target) * 100) }}
               onContribute={contributeToGoal}
+              onDelete={deleteGoal}
             />
           ))}
         </div>

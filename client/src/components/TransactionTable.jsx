@@ -1,5 +1,5 @@
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
-import { formatCurrency } from "../utils/finance";
+import { formatCurrency, formatDisplayDate } from "../utils/finance";
 
 export default function TransactionTable({ transactions, onEdit, onDelete, compact = false }) {
   if (!transactions.length) {
@@ -27,7 +27,7 @@ export default function TransactionTable({ transactions, onEdit, onDelete, compa
                 <span>{item.note}</span>
               </td>
               <td>{item.category}</td>
-              <td>{item.date}</td>
+              <td>{formatDisplayDate(item.date)}</td>
               <td>
                 <span className={`badge ${item.type}`}>{item.type}</span>
               </td>

@@ -1,6 +1,7 @@
-import { formatCurrency } from "../utils/finance";
+import { FiTrash2 } from "react-icons/fi";
+import { formatCurrency, formatDisplayDate } from "../utils/finance";
 
-export default function GoalCard({ goal, onContribute }) {
+export default function GoalCard({ goal, onContribute, onDelete }) {
   function handleSubmit(event) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -13,9 +14,16 @@ export default function GoalCard({ goal, onContribute }) {
       <div className="goal-head">
         <div>
           <h4>{goal.title}</h4>
-          <p>Target date: {goal.deadline}</p>
+          <p>Target date: {formatDisplayDate(goal.deadline)}</p>
         </div>
-        <strong>{goal.percentage}%</strong>
+        <div className="table-actions">
+          <strong>{goal.percentage}%</strong>
+          {onDelete ? (
+            <button type="button" onClick={() => onDelete(goal.id)} aria-label={`Delete ${goal.title}`}>
+              <FiTrash2 />
+            </button>
+          ) : null}
+        </div>
       </div>
       <div className="progress-track">
         <div className="progress-fill goal-fill" style={{ width: `${goal.percentage}%` }} />

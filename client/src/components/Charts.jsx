@@ -12,6 +12,7 @@ import {
   XAxis,
   YAxis
 } from "recharts";
+import { formatMonthLabel } from "../utils/finance";
 
 export function CategoryPieChart({ data }) {
   return (
@@ -33,9 +34,9 @@ export function IncomeExpenseChart({ data }) {
       <ResponsiveContainer width="100%" height={320}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="month" />
+          <XAxis dataKey="month" tickFormatter={formatMonthLabel} />
           <YAxis />
-          <Tooltip />
+          <Tooltip labelFormatter={formatMonthLabel} />
           <Legend />
           <Bar dataKey="income" fill="#1d4ed8" radius={[10, 10, 0, 0]} />
           <Bar dataKey="expenses" fill="#f97316" radius={[10, 10, 0, 0]} />
@@ -51,9 +52,9 @@ export function TrendLineChart({ data }) {
       <ResponsiveContainer width="100%" height={320}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="month" />
+          <XAxis dataKey="month" tickFormatter={formatMonthLabel} />
           <YAxis />
-          <Tooltip />
+          <Tooltip labelFormatter={formatMonthLabel} />
           <Legend />
           <Line type="monotone" dataKey="income" stroke="#0f766e" strokeWidth={3} />
           <Line type="monotone" dataKey="expenses" stroke="#dc2626" strokeWidth={3} />

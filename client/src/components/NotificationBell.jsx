@@ -1,22 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { FiBell } from "react-icons/fi";
+import { FiBell, FiTrash2 } from "react-icons/fi";
 import { useFinance } from "../context/FinanceContext";
+import { formatDisplayDate } from "../utils/finance";
 
 function formatNotificationTime(value) {
   if (!value) {
     return "";
   }
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("en-IN", {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(date);
+  return formatDisplayDate(value, { includeTime: true });
 }
 
 export default function NotificationBell() {
@@ -25,6 +17,7 @@ export default function NotificationBell() {
     notificationsError,
     notificationsLoading,
     refreshNotifications,
+    clearNotifications,
     markNotificationsRead,
     user
   } = useFinance();
@@ -40,6 +33,16 @@ export default function NotificationBell() {
     refreshNotifications().catch(() => {
       // Shared notifications error state handles the message.
     });
+
+    const intervalId = window.setInterval(() => {
+      refreshNotifications().catch(() => {
+        // Shared notifications error state handles the message.
+      });
+    }, 30 * 60 * 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
   }, [user.isAuthenticated]);
 
   useEffect(() => {
@@ -96,9 +99,18 @@ export default function NotificationBell() {
         <div className="notification-dropdown" role="dialog" aria-label="Notifications">
           <div className="notification-dropdown-header">
             <div>
-              <strong>Notifications</strong>
-              <p>{notificationsLoading ? "Loading updates..." : `${notifications.length} total`}</p>
+              <strong>Financial highlights</strong>
+              <p>{notificationsLoading ? "Loading updates..." : `${notifications.length} today`}</p>
             </div>
+            <button
+              type="button"
+              className="icon-button"
+              onClick={clearNotifications}
+              disabled={notificationsLoading || notifications.length === 0}
+              aria-label="Clear notifications"
+            >
+              <FiTrash2 />
+            </button>
           </div>
 
           {notificationsError ? <p className="notification-status error">{notificationsError}</p> : null}
@@ -116,12 +128,22 @@ export default function NotificationBell() {
                   className={`notification-item ${notification.read ? "read" : "unread"}`}
                 >
                   <div className="notification-item-top">
-                    <h4>{notification.title}</h4>
+                    <h4>
+                      {notification.url ? (
+                        <a href={notification.url} target="_blank" rel="noreferrer">
+                          {notification.title}
+                        </a>
+                      ) : (
+                        notification.title
+                      )}
+                    </h4>
                     <time dateTime={notification.createdAt}>
-                      {formatNotificationTime(notification.createdAt)}
+                      {formatNotificationTime(notification.publishedAt || notification.createdAt)}
                     </time>
                   </div>
-                  <p>{notification.message}</p>
+                  {notification.message && notification.message !== notification.title ? (
+                    <p>{notification.message}</p>
+                  ) : null}
                 </article>
               ))}
             </div>

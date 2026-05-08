@@ -40,7 +40,10 @@ const env = {
   gmailAppPassword: process.env.GMAIL_APP_PASSWORD || "",
   gmailOauthClientId: process.env.GMAIL_OAUTH_CLIENT_ID || "",
   gmailOauthClientSecret: process.env.GMAIL_OAUTH_CLIENT_SECRET || "",
-  gmailOauthRefreshToken: process.env.GMAIL_OAUTH_REFRESH_TOKEN || ""
+  gmailOauthRefreshToken: process.env.GMAIL_OAUTH_REFRESH_TOKEN || "",
+  financeNewsApiKey: process.env.FINANCE_NEWS_API_KEY || "",
+  financeNewsApiUrl: process.env.FINANCE_NEWS_API_URL || "https://newsapi.org/v2/everything",
+  financeNewsRefreshMinutes: Number(process.env.FINANCE_NEWS_REFRESH_MINUTES || 60)
 };
 
 if (!env.mongoUri) {

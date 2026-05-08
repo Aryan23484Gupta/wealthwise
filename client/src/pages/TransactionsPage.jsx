@@ -4,11 +4,11 @@ import TransactionForm from "../components/TransactionForm";
 import TransactionTable from "../components/TransactionTable";
 import { categories } from "../data/mockData";
 import { useFinance } from "../context/FinanceContext";
+import { getYearOptions, monthOptions } from "../utils/finance";
 
 const defaultFilters = {
   category: "All",
   type: "All",
-  month: "",
   minAmount: ""
 };
 
@@ -17,7 +17,9 @@ export default function TransactionsPage() {
     addTransaction,
     deleteTransaction,
     filteredTransactions,
+    reportingPeriod,
     resetAllTransactions,
+    setReportingPeriod,
     transactions,
     updateTransaction
   } = useFinance();
@@ -25,11 +27,23 @@ export default function TransactionsPage() {
   const [editing, setEditing] = useState(null);
   const [submitError, setSubmitError] = useState("");
 
-  const results = useMemo(() => filteredTransactions(filters), [filteredTransactions, filters]);
+  const yearOptions = useMemo(
+    () => getYearOptions(transactions, reportingPeriod.year),
+    [reportingPeriod.year, transactions]
+  );
+  const results = useMemo(
+    () => filteredTransactions({ ...filters, ...reportingPeriod }),
+    [filteredTransactions, filters, reportingPeriod]
+  );
 
   function handleChange(event) {
     const { name, value } = event.target;
     setFilters((current) => ({ ...current, [name]: value }));
+  }
+
+  function handlePeriodChange(event) {
+    const { name, value } = event.target;
+    setReportingPeriod({ ...reportingPeriod, [name]: value });
   }
 
   async function handleSubmit(transaction) {
@@ -105,7 +119,20 @@ export default function TransactionsPage() {
             <option value="income">Income</option>
             <option value="expense">Expense</option>
           </select>
-          <input name="month" type="month" value={filters.month} onChange={handleChange} />
+          <select name="month" value={reportingPeriod.month} onChange={handlePeriodChange}>
+            {monthOptions.map((month) => (
+              <option key={month.value} value={month.value}>
+                {month.label}
+              </option>
+            ))}
+          </select>
+          <select name="year" value={reportingPeriod.year} onChange={handlePeriodChange}>
+            {yearOptions.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
           <input name="minAmount" type="number" min="0" placeholder="Min amount" value={filters.minAmount} onChange={handleChange} />
         </div>
         <TransactionTable transactions={results} onEdit={setEditing} onDelete={handleDelete} />

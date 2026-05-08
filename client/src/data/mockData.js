@@ -1,6 +1,6 @@
-import { formatCurrency, getMonthKey } from "../utils/finance";
+import { formatCurrency, getCurrentMonthKey, getMonthKey } from "../utils/finance";
 
-const currentMonth = new Date().toISOString().slice(0, 7);
+const currentMonth = getCurrentMonthKey();
 
 export const categories = [
   "Food",
@@ -43,14 +43,37 @@ export function createSeedData() {
       {
         id: "note-1",
         type: "success",
-        title: "Salary received",
-        message: "Your recurring salary entry posted successfully."
+        title: "Save at least 20% of your income",
+        message: "Save at least 20% of your income",
+        read: false
       },
       {
         id: "note-2",
         type: "warning",
-        title: "Food spending is rising",
-        message: "Dining costs are trending 20% above last month."
+        title: "Never share OTP or UPI PIN",
+        message: "Never share OTP or UPI PIN",
+        read: false
+      },
+      {
+        id: "note-3",
+        type: "info",
+        title: "SIP investments work best long-term",
+        message: "SIP investments work best long-term",
+        read: false
+      },
+      {
+        id: "note-4",
+        type: "info",
+        title: "Avoid unnecessary subscriptions",
+        message: "Avoid unnecessary subscriptions",
+        read: false
+      },
+      {
+        id: "note-5",
+        type: "info",
+        title: "Keep an emergency fund ready",
+        message: "Keep an emergency fund ready",
+        read: false
       }
     ],
     assistantMessages: [
@@ -84,7 +107,7 @@ export function createSeedData() {
 }
 
 export function buildInsights({ transactions, totals, monthlyTrend, budgetUsage }) {
-  const currentTransactions = transactions.filter((item) => String(item.date || "").startsWith(currentMonth));
+  const currentTransactions = transactions.filter((item) => getMonthKey(item.date) === currentMonth);
   const currentExpenses = currentTransactions.filter((item) => item.type === "expense");
   const currentIncome = currentTransactions
     .filter((item) => item.type === "income")
@@ -189,7 +212,7 @@ export function buildInsights({ transactions, totals, monthlyTrend, budgetUsage 
 
 export function buildAssistantReply(question, state) {
   const normalized = question.toLowerCase();
-  const currentTransactions = state.transactions.filter((item) => item.date.startsWith(currentMonth));
+  const currentTransactions = state.transactions.filter((item) => getMonthKey(item.date) === currentMonth);
   const expenseTotal = currentTransactions
     .filter((item) => item.type === "expense")
     .reduce((sum, item) => sum + item.amount, 0);

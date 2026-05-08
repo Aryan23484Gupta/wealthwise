@@ -1,4 +1,8 @@
 const crypto = require("crypto");
+const {
+  createDailyFinancialHighlights,
+  getDailyHighlightDateKey
+} = require("../services/financialHighlightsService");
 
 function generateId(prefix) {
   return `${prefix}-${crypto.randomBytes(6).toString("hex")}`;
@@ -19,7 +23,10 @@ function mapNotification(notification) {
     title: notification.title,
     message: notification.message,
     createdAt: new Date(notification.createdAt).toISOString(),
-    read: Boolean(notification.read)
+    read: Boolean(notification.read),
+    url: notification.url || "",
+    source: notification.source || "",
+    publishedAt: notification.publishedAt ? new Date(notification.publishedAt).toISOString() : ""
   };
 }
 
@@ -54,7 +61,7 @@ function buildStatePayload(user) {
       monthlyBudget: user.budget?.monthlyBudget ?? 0
     },
     goals: Array.isArray(user.goals) ? user.goals.map(mapGoal) : [],
-    notifications: Array.isArray(user.notifications) ? user.notifications.map(mapNotification) : []
+    notifications: Array.isArray(user.notifications) ? user.notifications.slice(0, 5).map(mapNotification) : []
   };
 }
 
@@ -71,25 +78,16 @@ function ensureUserDefaults(user) {
     user.goals = [];
   }
 
-  if (!Array.isArray(user.notifications) || user.notifications.length === 0) {
-    user.notifications = [
-      {
-        id: generateId("note"),
-        type: "success",
-        title: "Welcome to WealthWise",
-        message: "Your account is ready. Start tracking transactions and savings goals.",
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
-        read: false
-      },
-      {
-        id: generateId("note"),
-        type: "info",
-        title: "Budget summary ready",
-        message: "Your weekly spending summary is ready to review.",
-        createdAt: new Date(Date.now() - 1000 * 60 * 20),
-        read: false
-      }
-    ];
+  const dailyHighlightPrefix = `highlight-${getDailyHighlightDateKey()}-`;
+  const hasCurrentDailyHighlights =
+    Array.isArray(user.notifications) &&
+    user.notifications.length === 5 &&
+    user.notifications.every((notification) => String(notification.id || "").startsWith(dailyHighlightPrefix));
+
+  if (!hasCurrentDailyHighlights) {
+    user.notifications = createDailyFinancialHighlights({
+      existingNotifications: Array.isArray(user.notifications) ? user.notifications : []
+    });
   }
 }
 

@@ -5,6 +5,7 @@ const Transaction = require("../../models/Transaction");
 const User = require("../../models/User");
 const { hashPassword, verifyPassword } = require("../../utils/password");
 const { generateId, mapGoal, buildStatePayload } = require("../utils/userState");
+const { mapTransaction } = require("./authController");
 
 function parsePositiveNumber(value, fieldName, { allowZero = false } = {}) {
   const parsed = Number(value);
@@ -14,6 +15,36 @@ function parsePositiveNumber(value, fieldName, { allowZero = false } = {}) {
   }
 
   return parsed;
+}
+
+function parseContributionDate(value) {
+  if (!value) {
+    return new Date();
+  }
+
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Date(`${value}T00:00:00.000Z`);
+  }
+
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    throw new AppError("Contribution date must be a valid date.", 400);
+  }
+
+  return parsedDate;
+}
+
+function buildGoalContributionTransaction({ userId, goal, amount, date }) {
+  return {
+    userId,
+    title: `${goal.title} goal contribution`,
+    amount,
+    type: "expense",
+    category: "Savings",
+    date,
+    note: `Contribution to ${goal.title} savings goal`
+  };
 }
 
 const updateProfile = asyncHandler(async (req, res) => {
@@ -159,18 +190,52 @@ const addGoal = asyncHandler(async (req, res) => {
 
 const contributeToGoal = asyncHandler(async (req, res) => {
   const amount = parsePositiveNumber(req.body.amount, "Contribution amount");
+  const date = parseContributionDate(req.body.date);
   const goal = req.user.goals?.find((item) => item.id === req.params.goalId);
 
   if (!goal) {
     throw new AppError("Goal not found.", 404);
   }
 
-  goal.saved = Math.min(goal.target, goal.saved + amount);
+  const remainingAmount = Math.max(goal.target - goal.saved, 0);
+  const appliedAmount = Math.min(amount, remainingAmount);
+
+  if (!appliedAmount) {
+    throw new AppError("This goal is already fully funded.", 400);
+  }
+
+  goal.saved += appliedAmount;
   await req.user.save();
+  const transaction = await Transaction.create(
+    buildGoalContributionTransaction({
+      userId: req.user._id,
+      goal,
+      amount: appliedAmount,
+      date
+    })
+  );
 
   res.json({
     message: "Goal contribution saved successfully.",
     goal: mapGoal(goal),
+    transaction: mapTransaction(transaction),
+    state: buildStatePayload(req.user)
+  });
+});
+
+const deleteGoal = asyncHandler(async (req, res) => {
+  const existingGoals = req.user.goals || [];
+  const nextGoals = existingGoals.filter((goal) => goal.id !== req.params.goalId);
+
+  if (nextGoals.length === existingGoals.length) {
+    throw new AppError("Goal not found.", 404);
+  }
+
+  req.user.goals = nextGoals;
+  await req.user.save();
+
+  res.json({
+    message: "Goal deleted successfully.",
     state: buildStatePayload(req.user)
   });
 });
@@ -179,6 +244,7 @@ module.exports = {
   addGoal,
   changePassword,
   contributeToGoal,
+  deleteGoal,
   deleteAccount,
   updateBudget,
   updatePreferences,

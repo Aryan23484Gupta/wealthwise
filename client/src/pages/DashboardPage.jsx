@@ -20,7 +20,8 @@ export default function DashboardPage() {
     budgetUsage,
     setBudget,
     savingsProgress,
-    contributeToGoal
+    contributeToGoal,
+    deleteGoal
   } = useFinance();
 
   return (
@@ -63,7 +64,7 @@ export default function DashboardPage() {
         <SectionCard title="Income vs expenses" subtitle="A quick monthly comparison to track cash flow.">
           <IncomeExpenseChart data={monthlyTrend} />
         </SectionCard>
-        <SectionCard title="Recent transactions" subtitle="Your latest 8 entries across income and expenses.">
+        <SectionCard title="Recent transactions" subtitle="Your latest 5 entries across income and expenses.">
           <TransactionTable transactions={recentTransactions} compact />
         </SectionCard>
       </div>
@@ -82,7 +83,7 @@ export default function DashboardPage() {
         <SectionCard title="Savings goals" subtitle="Keep long-term plans visible and on track.">
           <div className="stack-list">
             {savingsProgress.map((goal) => (
-              <GoalCard key={goal.id} goal={goal} onContribute={contributeToGoal} />
+              <GoalCard key={goal.id} goal={goal} onContribute={contributeToGoal} onDelete={deleteGoal} />
             ))}
           </div>
         </SectionCard>

@@ -5,6 +5,7 @@ const {
   addGoal,
   changePassword,
   contributeToGoal,
+  deleteGoal,
   deleteAccount,
   updateBudget,
   updatePreferences,
@@ -21,5 +22,6 @@ router.put("/password", changePassword);
 router.delete("/account", deleteAccount);
 router.post("/goals", addGoal);
 router.post("/goals/:goalId/contribute", contributeToGoal);
+router.delete("/goals/:goalId", deleteGoal);
 
 module.exports = router;

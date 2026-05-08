@@ -3,12 +3,20 @@ import { buildInsights, createSeedData } from "../data/mockData";
 import {
   computeCategoryBreakdown,
   computeMonthlyTrend,
+  computeMonthlyTrendWindow,
   computeTotals,
+  createGoalContributionTransaction,
   filterTransactions,
   generateId,
+  getCurrentMonthKey,
+  getGoalContributionAmount,
+  getLocalDateKey,
+  getMonthKeyFromPeriod,
   getBudgetUsage,
+  getCurrentMonthExpenseTotal,
   getGoalProgress,
-  getRecentTransactions
+  getRecentTransactions,
+  getTransactionsForMonth
 } from "../utils/finance";
 
 const FinanceContext = createContext(null);
@@ -18,6 +26,11 @@ const TOKEN_STORAGE_KEY = "wealthwise-auth-token";
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const seedState = createSeedData();
 
+function createDefaultReportingPeriod() {
+  const [year, month] = getCurrentMonthKey().split("-");
+  return { month, year };
+}
+
 function createInitialAssistantMessages() {
   return createSeedData().assistantMessages;
 }
@@ -25,6 +38,7 @@ function createInitialAssistantMessages() {
 function createGuestState(theme = seedState.preferences.theme) {
   return {
     ...createSeedData(),
+    reportingPeriod: createDefaultReportingPeriod(),
     preferences: {
       theme
     }
@@ -92,6 +106,7 @@ function mergeSessionState(sessionState, currentState) {
     ...createGuestState(currentState.preferences.theme),
     ...currentState,
     ...sessionState,
+    reportingPeriod: sessionState.reportingPeriod ?? currentState.reportingPeriod ?? createDefaultReportingPeriod(),
     transactions: sessionState.transactions ?? currentState.transactions,
     goals: sessionState.goals ?? currentState.goals,
     notifications: sessionState.notifications ?? currentState.notifications,
@@ -175,16 +190,25 @@ export function FinanceProvider({ children }) {
   }, [state.preferences.theme]);
 
   const value = useMemo(() => {
+    const currentMonthKey = getCurrentMonthKey();
+    const reportingMonthKey = getMonthKeyFromPeriod(state.reportingPeriod);
+    const currentMonthTransactions = getTransactionsForMonth(state.transactions, currentMonthKey);
+    const reportingTransactions = getTransactionsForMonth(state.transactions, reportingMonthKey);
     const totals = computeTotals(state.transactions);
-    const recentTransactions = getRecentTransactions(state.transactions, 8);
-    const categoryData = computeCategoryBreakdown(state.transactions);
+    const recentTransactions = getRecentTransactions(currentMonthTransactions, 5);
+    const categoryData = computeCategoryBreakdown(currentMonthTransactions);
     const monthlyTrend = computeMonthlyTrend(state.transactions);
-    const budgetUsage = getBudgetUsage(state.transactions, state.budget.monthlyBudget);
+    const budgetUsage = getBudgetUsage(state.transactions, state.budget.monthlyBudget, currentMonthKey);
+    const currentMonthSpend = getCurrentMonthExpenseTotal(state.transactions, currentMonthKey);
+    const reportingTotals = computeTotals(reportingTransactions);
+    const reportingCategoryData = computeCategoryBreakdown(reportingTransactions);
+    const reportingBudgetUsage = getBudgetUsage(state.transactions, state.budget.monthlyBudget, reportingMonthKey);
+    const reportingMonthlyTrend = computeMonthlyTrendWindow(state.transactions, reportingMonthKey, 3);
     const savingsProgress = getGoalProgress(state.goals);
     const insights = buildInsights({
-      transactions: state.transactions,
-      totals,
-      monthlyTrend,
+      transactions: currentMonthTransactions,
+      totals: computeTotals(currentMonthTransactions),
+      monthlyTrend: computeMonthlyTrend(currentMonthTransactions),
       budgetUsage
     });
 
@@ -219,11 +243,28 @@ export function FinanceProvider({ children }) {
       categoryData,
       monthlyTrend,
       budgetUsage,
+      currentMonthSpend,
+      currentMonthKey,
+      reportingMonthKey,
+      reportingTransactions,
+      reportingTotals,
+      reportingCategoryData,
+      reportingBudgetUsage,
+      reportingMonthlyTrend,
       savingsProgress,
       insights,
       notificationsLoading,
       notificationsError,
       isBootstrapping,
+      setReportingPeriod: (period) => {
+        setState((current) => ({
+          ...current,
+          reportingPeriod: {
+            month: period.month || current.reportingPeriod?.month || createDefaultReportingPeriod().month,
+            year: period.year || current.reportingPeriod?.year || createDefaultReportingPeriod().year
+          }
+        }));
+      },
       filteredTransactions: (filters) => filterTransactions(state.transactions, filters),
       login: async (payload) => {
         const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -404,6 +445,36 @@ export function FinanceProvider({ children }) {
           throw error;
         }
       },
+      clearNotifications: async () => {
+        const previousNotifications = state.notifications;
+        setNotificationsError("");
+        setState((current) => ({
+          ...current,
+          notifications: []
+        }));
+
+        if (!authToken) {
+          return [];
+        }
+
+        try {
+          const data = await request("/api/notifications", {
+            method: "DELETE"
+          });
+          setState((current) => ({
+            ...current,
+            notifications: data.notifications || []
+          }));
+          return data.notifications || [];
+        } catch (error) {
+          setState((current) => ({
+            ...current,
+            notifications: previousNotifications
+          }));
+          setNotificationsError(error.message);
+          throw error;
+        }
+      },
       toggleTheme: async () => {
         const nextTheme = state.preferences.theme === "dark" ? "light" : "dark";
         const previousTheme = state.preferences.theme;
@@ -557,24 +628,65 @@ export function FinanceProvider({ children }) {
         return data.goal;
       },
       contributeToGoal: async (goalId, amount) => {
+        const contributionDate = getLocalDateKey();
+
         if (!authToken) {
           setState((current) => ({
             ...current,
-            goals: current.goals.map((goal) =>
-              goal.id === goalId
-                ? { ...goal, saved: Math.min(goal.target, goal.saved + Number(amount)) }
-                : goal
-            )
+            ...(() => {
+              const goal = current.goals.find((item) => item.id === goalId);
+              const appliedAmount = getGoalContributionAmount(goal, amount);
+              const transaction = createGoalContributionTransaction(goal, appliedAmount, {
+                date: contributionDate
+              });
+
+              if (!goal || !appliedAmount || !transaction) {
+                return {};
+              }
+
+              return {
+                goals: current.goals.map((item) =>
+                  item.id === goalId ? { ...item, saved: item.saved + appliedAmount } : item
+                ),
+                transactions: [transaction, ...current.transactions]
+              };
+            })()
           }));
           return;
         }
 
         const data = await request(`/api/users/goals/${goalId}/contribute`, {
           method: "POST",
-          body: JSON.stringify({ amount: Number(amount) })
+          body: JSON.stringify({ amount: Number(amount), date: contributionDate })
         });
         applyState(data.state);
+        if (data.transaction) {
+          setState((current) => ({
+            ...current,
+            transactions: current.transactions.some((item) => item.id === data.transaction.id)
+              ? current.transactions
+              : [data.transaction, ...current.transactions]
+          }));
+        }
         return data.goal;
+      },
+      deleteGoal: async (goalId) => {
+        if (!window.confirm("Delete this goal?")) {
+          return;
+        }
+
+        if (!authToken) {
+          setState((current) => ({
+            ...current,
+            goals: current.goals.filter((goal) => goal.id !== goalId)
+          }));
+          return;
+        }
+
+        const data = await request(`/api/users/goals/${goalId}`, {
+          method: "DELETE"
+        });
+        applyState(data.state);
       },
       askAssistant: async (question, provider = "openai") => {
         const response = await fetch(`${API_BASE_URL}/chat`, {

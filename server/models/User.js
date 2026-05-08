@@ -59,6 +59,19 @@ const notificationSchema = new mongoose.Schema(
     read: {
       type: Boolean,
       default: false
+    },
+    url: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    source: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    publishedAt: {
+      type: Date
     }
   },
   {
