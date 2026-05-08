@@ -1,12 +1,26 @@
+import { useState } from "react";
 import { FiTrash2 } from "react-icons/fi";
 import { formatCurrency, formatDisplayDate } from "../utils/finance";
 
 export default function GoalCard({ goal, onContribute, onDelete }) {
-  function handleSubmit(event) {
+  const [error, setError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function handleSubmit(event) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    onContribute(goal.id, formData.get("amount"));
-    event.currentTarget.reset();
+
+    setError("");
+    setIsSaving(true);
+
+    try {
+      await onContribute(goal.id, formData.get("amount"));
+      event.currentTarget.reset();
+    } catch (submitError) {
+      setError(submitError.message);
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -33,11 +47,12 @@ export default function GoalCard({ goal, onContribute, onDelete }) {
         <span>{formatCurrency(goal.target)} goal</span>
       </div>
       <form className="inline-form" onSubmit={handleSubmit}>
-        <input type="number" name="amount" min="1" placeholder="Add funds" required />
-        <button type="submit" className="ghost-button">
-          Contribute
+        <input type="number" name="amount" min="1" placeholder="Add funds" disabled={isSaving} required />
+        <button type="submit" className="ghost-button" disabled={isSaving}>
+          {isSaving ? "Saving..." : "Contribute"}
         </button>
       </form>
+      {error ? <p className="auth-error">{error}</p> : null}
     </div>
   );
 }

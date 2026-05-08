@@ -1,4 +1,4 @@
-export const  formatCurrency = (value) => {
+export const formatCurrency = (value) => {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
@@ -6,7 +6,7 @@ export const  formatCurrency = (value) => {
   }).format(Number(value) || 0);
 }
 
-export const  generateId = (prefix) => {
+export const generateId = (prefix) => {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
@@ -84,7 +84,7 @@ export const monthOptions = [
   { value: "12", label: "December" }
 ];
 
-export const  computeTotals = (transactions) => {
+export const computeTotals = (transactions) => {
   return transactions.reduce(
     (acc, item) => {
       const amount = toAmount(item.amount);
@@ -240,16 +240,6 @@ export function getCurrentMonthKey(date = new Date()) {
   return `${date.getFullYear()}-${month}`;
 }
 
-export function getPeriodFromMonthKey(monthKey = getCurrentMonthKey()) {
-  const [year, month] = String(monthKey).split("-");
-  const [currentYear, currentMonth] = getCurrentMonthKey().split("-");
-
-  return {
-    month: month || currentMonth,
-    year: year || currentYear
-  };
-}
-
 export function getMonthKeyFromPeriod(period) {
   return period?.year && period?.month ? `${period.year}-${period.month}` : getCurrentMonthKey();
 }
@@ -297,15 +287,6 @@ export function getGoalProgress(goals) {
     ...goal,
     percentage: Math.round((goal.saved / goal.target) * 100)
   }));
-}
-
-export function getSavingsDelta(monthlyTrend) {
-  const [previous, current] = monthlyTrend.slice(-2);
-  if (!current || !previous) {
-    return 0;
-  }
-
-  return current.income - current.expenses - (previous.income - previous.expenses);
 }
 
 export const chartPalette = ["#1d4ed8", "#0f766e", "#f97316", "#9333ea", "#dc2626", "#ca8a04"];

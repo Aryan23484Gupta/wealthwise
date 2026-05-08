@@ -40,18 +40,15 @@ const env = {
   gmailAppPassword: process.env.GMAIL_APP_PASSWORD || "",
   gmailOauthClientId: process.env.GMAIL_OAUTH_CLIENT_ID || "",
   gmailOauthClientSecret: process.env.GMAIL_OAUTH_CLIENT_SECRET || "",
-  gmailOauthRefreshToken: process.env.GMAIL_OAUTH_REFRESH_TOKEN || "",
-  financeNewsApiKey: process.env.FINANCE_NEWS_API_KEY || "",
-  financeNewsApiUrl: process.env.FINANCE_NEWS_API_URL || "https://newsapi.org/v2/everything",
-  financeNewsRefreshMinutes: Number(process.env.FINANCE_NEWS_REFRESH_MINUTES || 60)
+  gmailOauthRefreshToken: process.env.GMAIL_OAUTH_REFRESH_TOKEN || ""
 };
 
 if (!env.mongoUri) {
-  console.warn("MONGO_URI is not configured. Auth and transaction routes will not work until it is set.");
+  process.emitWarning("MONGO_URI is not configured. Auth and transaction routes will not work until it is set.");
 }
 
 if (!env.openaiApiKey || !env.groqApiKey || !env.geminiApiKey) {
-  console.warn("One or more AI provider API keys are not configured. Add real keys before using that provider.");
+  process.emitWarning("One or more AI provider API keys are not configured. Add real keys before using that provider.");
 }
 
 if (env.mailEnabled) {

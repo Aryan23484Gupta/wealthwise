@@ -8,6 +8,7 @@ import {
   createGoalContributionTransaction,
   createGoalRefundTransaction,
   filterTransactions,
+  formatCurrency,
   generateId,
   getCurrentMonthKey,
   getGoalContributionAmount,
@@ -387,7 +388,6 @@ export function FinanceProvider({ children }) {
             });
           }
         } catch {
-          // Ignore logout failures and clear the local session anyway.
         } finally {
           setAuthToken("");
           window.sessionStorage.removeItem(CHAT_STORAGE_KEY);
@@ -612,6 +612,16 @@ export function FinanceProvider({ children }) {
         setState(createGuestState(state.preferences.theme));
       },
       addGoal: async (goal) => {
+        const initialSaved = Number(goal.saved || 0);
+
+        if (initialSaved > totals.balance) {
+          throw new Error(
+            `You only have ${formatCurrency(
+              totals.balance
+            )} available. Please enter a goal contribution amount less than or equal to your net balance.`
+          );
+        }
+
         if (!authToken) {
           const fallbackGoal = { ...goal, id: generateId("goal") };
           const initialContribution = createGoalContributionTransaction(fallbackGoal, fallbackGoal.saved);
@@ -642,13 +652,21 @@ export function FinanceProvider({ children }) {
       },
       contributeToGoal: async (goalId, amount) => {
         const contributionDate = getLocalDateKey();
+        const goal = state.goals.find((item) => item.id === goalId);
+        const appliedAmount = getGoalContributionAmount(goal, amount);
+
+        if (appliedAmount > totals.balance) {
+          throw new Error(
+            `You only have ${formatCurrency(
+              totals.balance
+            )} available. Please enter a goal contribution amount less than or equal to your net balance.`
+          );
+        }
 
         if (!authToken) {
           setState((current) => ({
             ...current,
             ...(() => {
-              const goal = current.goals.find((item) => item.id === goalId);
-              const appliedAmount = getGoalContributionAmount(goal, amount);
               const transaction = createGoalContributionTransaction(goal, appliedAmount, {
                 date: contributionDate
               });

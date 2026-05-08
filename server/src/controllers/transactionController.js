@@ -1,7 +1,9 @@
 const mongoose = require("mongoose");
 
 const Transaction = require("../../models/Transaction");
+const { getNetBalance } = require("../services/transactionSummaryService");
 const asyncHandler = require("../utils/asyncHandler");
+const { formatCurrency } = require("../utils/currency");
 const { AppError } = require("../utils/errors");
 const { mapTransaction } = require("./authController");
 
@@ -51,45 +53,6 @@ function parseTransactionPayload(payload, { partial = false } = {}) {
     ...(payload.date !== undefined || !partial ? { date } : {}),
     ...(payload.note !== undefined || !partial ? { note } : {})
   };
-}
-
-function formatCurrency(value) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0
-  }).format(Number(value) || 0);
-}
-
-async function getNetBalance(userId, { excludeTransactionId } = {}) {
-  const match = {
-    userId
-  };
-
-  if (excludeTransactionId) {
-    match._id = { $ne: excludeTransactionId };
-  }
-
-  const [totals = { income: 0, expenses: 0 }] = await Transaction.aggregate([
-    { $match: match },
-    {
-      $group: {
-        _id: null,
-        income: {
-          $sum: {
-            $cond: [{ $eq: ["$type", "income"] }, "$amount", 0]
-          }
-        },
-        expenses: {
-          $sum: {
-            $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0]
-          }
-        }
-      }
-    }
-  ]);
-
-  return Number(totals.income || 0) - Number(totals.expenses || 0);
 }
 
 async function assertExpenseWithinBalance({ userId, amount, type, excludeTransactionId }) {

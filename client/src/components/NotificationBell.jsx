@@ -23,21 +23,22 @@ export default function NotificationBell() {
   } = useFinance();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const refreshNotificationsRef = useRef(refreshNotifications);
   const unreadCount = notifications.filter((item) => !item.read).length;
+
+  useEffect(() => {
+    refreshNotificationsRef.current = refreshNotifications;
+  }, [refreshNotifications]);
 
   useEffect(() => {
     if (!user.isAuthenticated) {
       return;
     }
 
-    refreshNotifications().catch(() => {
-      // Shared notifications error state handles the message.
-    });
+    refreshNotificationsRef.current().catch(() => {});
 
     const intervalId = window.setInterval(() => {
-      refreshNotifications().catch(() => {
-        // Shared notifications error state handles the message.
-      });
+      refreshNotificationsRef.current().catch(() => {});
     }, 30 * 60 * 1000);
 
     return () => {

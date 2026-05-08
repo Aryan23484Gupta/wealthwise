@@ -178,8 +178,6 @@ const requestPasswordReset = asyncHandler(async (req, res) => {
     }
   );
 
-  console.log(`Password reset OTP for ${email}: ${otpCode}`);
-
   try {
     await sendPasswordResetEmail(req, {
       email,
@@ -287,8 +285,6 @@ const requestSignupOtp = asyncHandler(async (req, res) => {
     }
   );
 
-  console.log(`Signup OTP for ${email}: ${otpCode}`);
-
   try {
     await sendSignupOtpEmail(req, {
       email,
@@ -347,8 +343,7 @@ const verifySignupOtp = asyncHandler(async (req, res) => {
       email: user.email,
       name: user.name
     });
-  } catch (error) {
-    console.error("Welcome email failed", error);
+  } catch {
   }
 
   res.status(201).json({
@@ -377,8 +372,6 @@ const resendSignupOtp = asyncHandler(async (req, res) => {
   pendingSignup.otpCode = otpCode;
   pendingSignup.otpExpiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
   await pendingSignup.save();
-
-  console.log(`Signup OTP resend for ${email}: ${otpCode}`);
 
   try {
     await sendSignupOtpEmail(req, {

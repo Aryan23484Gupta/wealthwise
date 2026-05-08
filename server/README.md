@@ -1,128 +1,85 @@
-# Agentic AI Backend
+# WealthWise Backend
 
-This backend exposes an AI chatbot that analyzes intent with Gemini and sends Gmail emails with Nodemailer when the user request requires it.
+Express and MongoDB API for the WealthWise personal finance app.
 
-## Folder structure
+## Responsibilities
+
+- User signup, OTP verification, login, session restore, logout, and password reset.
+- Profile, preferences, budget, savings goals, and account management.
+- Income and expense transaction management.
+- Daily financial highlight notifications.
+- AI assistant chat through OpenAI, Groq, or Gemini-compatible providers.
+- Email delivery for signup, welcome, and password-reset flows.
+
+## Structure
 
 ```text
-backend/
+server/
   index.js
-  package.json
-  .env.example
-  README.md
-  examples/
-    frontend-fetch-example.js
+  dbconnection.js
+  models/
   src/
     app.js
     server.js
     config/
-      env.js
-      logger.js
     controllers/
-      chatController.js
-      emailController.js
     routes/
-      chatRoutes.js
-      emailRoutes.js
     services/
-      agentService.js
-      emailService.js
-      geminiService.js
     utils/
-      asyncHandler.js
-      errors.js
+  utils/
 ```
 
 ## Setup
 
-1. Install dependencies:
-
 ```bash
-cd backend
 npm install
-```
-
-2. Copy the environment template:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-3. Add your Gemini API key.
-
-4. Configure Gmail SMTP:
-   Use `GMAIL_APP_PASSWORD` for a simple setup, or the OAuth2 variables for a more production-friendly Gmail flow.
-
-5. Start the API:
-
-```bash
 npm run dev
 ```
 
-6. Test the health endpoint:
+Required environment:
 
 ```text
-GET http://localhost:5000/health
+MONGO_URI=
+CLIENT_URL=http://localhost:5173
 ```
 
-## API endpoints
+Optional environment:
 
-### `POST /chat`
-
-Request:
-
-```json
-{
-  "message": "Send a budget alert email to finance@example.com saying we exceeded the travel budget."
-}
+```text
+OPENAI_API_KEY=
+GROQ_API_KEY=
+GEMINI_API_KEY=
+MAIL_ENABLED=false
+MAIL_FROM=
+GMAIL_USER=
+GMAIL_APP_PASSWORD=
 ```
 
-Response:
+## Endpoints
 
-```json
-{
-  "success": true,
-  "message": "I sent the email alert and confirmed the travel budget issue.",
-  "agent": {
-    "action": "send_email",
-    "confidence": 0.94,
-    "reasoning": "User explicitly requested an email alert."
-  },
-  "email": {
-    "sent": true,
-    "messageId": "<example-message-id>"
-  }
-}
-```
-
-### `POST /send-email`
-
-Request:
-
-```json
-{
-  "to": "user@example.com",
-  "subject": "Weekly report",
-  "text": "Your weekly report is ready."
-}
-```
-
-Response:
-
-```json
-{
-  "success": true,
-  "message": "Email sent successfully.",
-  "data": {
-    "messageId": "<example-message-id>",
-    "accepted": ["user@example.com"],
-    "rejected": []
-  }
-}
-```
-
-## Notes
-
-- Nodemailer's Gmail guide says OAuth2 is the recommended option for new Gmail integrations, while App Passwords are acceptable when 2-Step Verification is enabled.
-- The Gemini integration uses the official `@google/genai` SDK, which Google documents as the recommended JavaScript SDK.
-- Gmail can block suspicious automated traffic and has sending limits, so for heavier production traffic you may eventually want a dedicated email provider.
+- `GET /health`
+- `POST /chat`
+- `POST /api/auth/signup/request-otp`
+- `POST /api/auth/signup/verify-otp`
+- `POST /api/auth/signup/resend-otp`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/session`
+- `POST /api/auth/password/forgot`
+- `POST /api/auth/password/reset`
+- `GET /api/notifications`
+- `PUT /api/notifications/read`
+- `DELETE /api/notifications`
+- `GET /api/transactions`
+- `POST /api/transactions`
+- `PUT /api/transactions/:transactionId`
+- `DELETE /api/transactions/:transactionId`
+- `DELETE /api/transactions`
+- `PUT /api/users/profile`
+- `PUT /api/users/preferences`
+- `PUT /api/users/budget`
+- `PUT /api/users/password`
+- `DELETE /api/users/account`
+- `POST /api/users/goals`
+- `POST /api/users/goals/:goalId/contribute`
+- `DELETE /api/users/goals/:goalId`

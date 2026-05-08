@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import GoalCard from "../components/GoalCard";
+import PasswordField from "../components/PasswordField";
 import SectionCard from "../components/SectionCard";
 import { useFinance } from "../context/FinanceContext";
 import { getAvatarUrl } from "../utils/avatar";
@@ -205,14 +206,8 @@ export default function SettingsPage() {
       <SectionCard title="Change password" subtitle="Update your login password securely.">
         <form className="transaction-form" onSubmit={handlePasswordSubmit}>
           <div className="form-grid">
-            <label>
-              Current password
-              <input name="currentPassword" type="password" required />
-            </label>
-            <label>
-              New password
-              <input name="newPassword" type="password" minLength={6} required />
-            </label>
+            <PasswordField label="Current password" name="currentPassword" required />
+            <PasswordField label="New password" name="newPassword" minLength={6} required />
           </div>
           <div className="form-actions">
             <button type="submit" className="primary-button">
@@ -225,10 +220,7 @@ export default function SettingsPage() {
       <SectionCard title="Delete account" subtitle="Permanently remove your profile, transactions, and settings.">
         <form className="transaction-form danger-zone" onSubmit={handleDeleteAccount}>
           <div className="form-grid">
-            <label>
-              Password
-              <input name="password" type="password" required />
-            </label>
+            <PasswordField label="Password" name="password" required />
             <label>
               Type DELETE
               <input name="confirmation" placeholder="DELETE" required />

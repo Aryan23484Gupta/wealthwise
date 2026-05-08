@@ -7,6 +7,8 @@ const PasswordResetToken = require("../../models/PasswordResetToken");
 const Transaction = require("../../models/Transaction");
 const User = require("../../models/User");
 const { hashPassword, verifyPassword } = require("../../utils/password");
+const { getNetBalance } = require("../services/transactionSummaryService");
+const { formatCurrency } = require("../utils/currency");
 const { generateId, mapGoal, buildStatePayload } = require("../utils/userState");
 const { mapTransaction } = require("./authController");
 
@@ -50,14 +52,6 @@ function buildGoalContributionTransaction({ userId, goal, amount, date }) {
   };
 }
 
-function formatCurrency(value) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0
-  }).format(Number(value) || 0);
-}
-
 function buildGoalRefundTransaction({ userId, goal, amount }) {
   return {
     userId,
@@ -68,29 +62,6 @@ function buildGoalRefundTransaction({ userId, goal, amount }) {
     date: new Date(),
     note: `Refunded because the savings goal "${goal.title}" was deleted.`
   };
-}
-
-async function getNetBalance(userId) {
-  const [totals = { income: 0, expenses: 0 }] = await Transaction.aggregate([
-    { $match: { userId } },
-    {
-      $group: {
-        _id: null,
-        income: {
-          $sum: {
-            $cond: [{ $eq: ["$type", "income"] }, "$amount", 0]
-          }
-        },
-        expenses: {
-          $sum: {
-            $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0]
-          }
-        }
-      }
-    }
-  ]);
-
-  return Number(totals.income || 0) - Number(totals.expenses || 0);
 }
 
 async function assertGoalContributionWithinBalance(userId, amount) {
@@ -324,6 +295,8 @@ const contributeToGoal = asyncHandler(async (req, res) => {
   if (!appliedAmount) {
     throw new AppError("This goal is already fully funded.", 400);
   }
+
+  await assertGoalContributionWithinBalance(req.user._id, appliedAmount);
 
   goal.saved += appliedAmount;
   await req.user.save();

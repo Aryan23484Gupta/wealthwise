@@ -5,24 +5,14 @@ const { env } = require("./config/env");
 const logger = require("./config/logger");
 const connectDB = require("../dbconnection");
 const EmailService = require("./services/emailService");
-const GeminiService = require("./services/geminiService");
-const AgentService = require("./services/agentService");
 const { AIAssistantService } = require("./services/aiAssistantService");
 
 function createServices() {
   const emailService = new EmailService(env);
-  const geminiService = new GeminiService(env);
   const aiAssistantService = new AIAssistantService({ env, logger });
-  const agentService = new AgentService({
-    geminiService,
-    emailService,
-    logger
-  });
 
   app.locals.emailService = emailService;
-  app.locals.geminiService = geminiService;
   app.locals.aiAssistantService = aiAssistantService;
-  app.locals.agentService = agentService;
 }
 
 async function startServer() {

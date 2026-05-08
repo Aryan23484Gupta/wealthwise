@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import PasswordField from "../components/PasswordField";
 import { useFinance } from "../context/FinanceContext";
 
 export default function AuthPage() {
@@ -194,17 +195,14 @@ export default function AuthPage() {
                   required
                 />
               </label>
-              <label>
-                New password
-                <input
-                  name="newPassword"
-                  type="password"
-                  value={form.newPassword}
-                  onChange={handleChange}
-                  minLength={6}
-                  required
-                />
-              </label>
+              <PasswordField
+                label="New password"
+                name="newPassword"
+                value={form.newPassword}
+                onChange={handleChange}
+                minLength={6}
+                required
+              />
             </>
           ) : mode === "signup" && otpSession ? (
             <>
@@ -240,10 +238,13 @@ export default function AuthPage() {
                 Email
                 <input name="email" type="email" value={form.email} onChange={handleChange} required />
               </label>
-              <label>
-                Password
-                <input name="password" type="password" value={form.password} onChange={handleChange} required />
-              </label>
+              <PasswordField
+                label="Password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
             </>
           )}
 

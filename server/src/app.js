@@ -7,7 +7,6 @@ const morgan = require("morgan");
 const { env } = require("./config/env");
 const logger = require("./config/logger");
 const chatRoutes = require("./routes/chatRoutes");
-const emailRoutes = require("./routes/emailRoutes");
 const authRoutes = require("./routes/authRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
@@ -65,7 +64,6 @@ app.get("/health", async (req, res, next) => {
 });
 
 app.use("/chat", chatRoutes);
-app.use("/send-email", emailRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/transactions", transactionRoutes);
